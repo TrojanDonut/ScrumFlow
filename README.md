@@ -2,8 +2,6 @@
 
 A comprehensive web application for managing Scrum projects, built with Django (backend) and React (frontend).
 
-![Scrum Workflow Banner](https://via.placeholder.com/1200x300/0d6efd/FFFFFF?text=Scrum+Workflow+Application)
-
 ## 📋 Overview
 
 This application provides a complete solution for Scrum teams to manage their projects, sprints, user stories, and tasks. It supports the entire Scrum workflow from project creation to sprint retrospectives.
