@@ -1,3 +1,7 @@
+---
+description: 
+globs: 
+---
 We have to make a simple web app for Scrum workflow. The details are listed in the user stories, numbered below.
 We would like to use django for backend, react for frontend. The environment should have both dev and prod. Everything should be on git, where a team of 4 people is going to implement changes. We are not sure yet if everyone should run locally this app or on a single server managed by git. Let's say local for now.
 

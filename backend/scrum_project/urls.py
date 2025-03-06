@@ -24,10 +24,11 @@ urlpatterns = [
     
     # API URLs
     path('api/', include('users.urls')),
-    path('api/', include('projects.urls')),
-    path('api/', include('sprints.urls')),
-    path('api/', include('stories.urls')),
-    path('api/', include('tasks.urls')),
+    # Temporarily commented out for testing authentication
+    # path('api/', include('projects.urls')),
+    # path('api/', include('sprints.urls')),
+    # path('api/', include('stories.urls')),
+    # path('api/', include('tasks.urls')),
     
     # API documentation
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

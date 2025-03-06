@@ -60,21 +60,54 @@ This application provides a complete solution for Scrum teams to manage their pr
    cd scrum-workflow-app
    ```
 
-2. **Start the application**
+2. **Build and start the Docker containers**
    ```bash
-   # Build and start all services
+   # Build the Docker images
+   docker-compose build
+   
+   # Start the containers in detached mode
    docker-compose up -d
-
-   # To rebuild after making changes
-   docker-compose up -d --build
    ```
 
-3. **Access the application**
+3. **Set up the database**
+   ```bash
+   # Apply database migrations
+   docker-compose exec backend python manage.py migrate
+   
+   # Create initial test data (users and sample project)
+   docker-compose exec backend python manage.py create_initial_data
+   ```
 
+4. **Access the application**
    - Frontend: [http://localhost:3000](http://localhost:3000)
    - Backend API: [http://localhost:8000/api](http://localhost:8000/api)
    - API documentation: [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
    - Admin interface: [http://localhost:8000/admin](http://localhost:8000/admin)
+
+### Troubleshooting
+
+If you encounter any issues during setup:
+
+1. **Check container logs**
+   ```bash
+   docker-compose logs backend
+   docker-compose logs frontend
+   ```
+
+2. **Restart the containers**
+   ```bash
+   docker-compose down
+   docker-compose up -d
+   ```
+
+3. **Reset the database** (if you have migration issues)
+   ```bash
+   docker-compose down
+   docker-compose run --rm backend rm -f db.sqlite3
+   docker-compose up -d
+   docker-compose exec backend python manage.py migrate
+   docker-compose exec backend python manage.py create_initial_data
+   ```
 
 ### Default Users
 
@@ -86,6 +119,7 @@ The application comes with pre-configured users for testing:
 | product_owner | password123 | Product Owner |
 | scrum_master | password123 | Scrum Master |
 | developer | password123 | Developer |
+
 
 ## 💻 Development
 
