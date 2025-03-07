@@ -1,15 +1,25 @@
 from rest_framework import serializers
 from .models import Project, ProjectMember, ProjectWallPost, ProjectWallComment, ProjectDocument
 
-class ProjectSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Project
-        fields = '__all__'
-
 class ProjectMemberSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+
     class Meta:
         model = ProjectMember
-        fields = '__all__'
+        fields = ['id', 'user', 'role', 'joined_at']
+
+class ProjectSerializer(serializers.ModelSerializer):
+    members = ProjectMemberSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Project
+        fields = ['id', 'name', 'description', 'created_at', 'updated_at', 'members']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if not self.context.get('include_members', False):
+            representation.pop('members', None)
+        return representation
 
 class ProjectWallPostSerializer(serializers.ModelSerializer):
     class Meta:

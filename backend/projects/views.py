@@ -33,6 +33,12 @@ class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['include_members'] = True
+        return context
+    
+
 class ProjectMemberListCreateView(generics.ListCreateAPIView):
     """
     get:
