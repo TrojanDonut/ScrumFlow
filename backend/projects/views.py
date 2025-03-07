@@ -55,6 +55,14 @@ class ProjectMemberListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(project_id=self.kwargs['project_id'])
 
+class ProjectMemberListView(generics.ListAPIView):
+    """
+    get:
+    Return a list of all project members.
+    """
+    queryset = ProjectMember.objects.all()
+    serializer_class = ProjectMemberSerializer
+
 class ProjectMemberDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     get:

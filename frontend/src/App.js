@@ -9,6 +9,7 @@ import ProjectDetail from './pages/ProjectDetail';
 import UserManagement from './pages/UserManagement';
 import CreateProject from './pages/CreateProject';
 import ProtectedRoute from './components/ProtectedRoute';
+import EditProjectMembers from './pages/EditProjectMembers';
 import { useSelector } from 'react-redux';
 
 function App() {
@@ -44,6 +45,12 @@ function App() {
           <Route path="/projects/:id" element={
             <ProtectedRoute>
               <ProjectDetail />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/:id/members" element={
+            <ProtectedRoute>
+              <EditProjectMembers />
             </ProtectedRoute>
           } />
           

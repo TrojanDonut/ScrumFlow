@@ -52,6 +52,30 @@ export const fetchProjectById = createAsyncThunk(
   }
 );
 
+export const fetchAllExistingProjectMembers = createAsyncThunk(
+  'projects/members',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/projects/members`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response ? error.response.data : error.message);
+    }
+  }
+);
+
 export const createProject = createAsyncThunk(
   'projects/createProject',
   async (projectData, { rejectWithValue, getState }) => {
@@ -76,9 +100,33 @@ export const createProject = createAsyncThunk(
   }
 );
 
+export const removeMemberFromProject = createAsyncThunk(
+  'projects/removeMemberFromProject',
+  async ({userId, projectId}, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+      const response = await axios.delete(`${API_URL}/projects/${projectId}/members/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response ? error.response.data : error.message);
+    }
+  }
+);
+
 const initialState = {
   projects: [],
   currentProject: null,
+  members: [],
   loading: false,
   error: null,
 };
@@ -134,6 +182,32 @@ const projectSlice = createSlice({
       .addCase(createProject.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to create project';
+      })
+      .addCase(fetchAllExistingProjectMembers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllExistingProjectMembers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.members = action.payload;
+      })
+      .addCase(fetchAllExistingProjectMembers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      })
+      .addCase(removeMemberFromProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(removeMemberFromProject.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentProject.members = state.currentProject.members.filter(
+          (member) => member.id !== action.meta.arg.userId
+        )
+      })
+      .addCase(removeMemberFromProject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to remove member from project';
       });
   },
 });
