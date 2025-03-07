@@ -30,12 +30,48 @@ export const fetchProjects = createAsyncThunk(
 
 export const fetchProjectById = createAsyncThunk(
   'projects/fetchProjectById',
-  async (projectId, { rejectWithValue }) => {
+  async (projectId, { rejectWithValue, getState }) => {
     try {
-      const response = await axios.get(`${API_URL}/projects/${projectId}/`);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/projects/${projectId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response ? error.response.data : error.message);
+    }
+  }
+);
+
+export const createProject = createAsyncThunk(
+  'projects/createProject',
+  async (projectData, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(`${API_URL}/projects/`, projectData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response ? error.response.data : error.message);
     }
   }
 );
@@ -73,7 +109,6 @@ const projectSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to fetch projects';
       })
-      
       // Fetch project by id reducers
       .addCase(fetchProjectById.pending, (state) => {
         state.loading = true;
@@ -86,9 +121,22 @@ const projectSlice = createSlice({
       .addCase(fetchProjectById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch project';
+      })
+      // Create project reducers
+      .addCase(createProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createProject.fulfilled, (state, action) => {
+        state.loading = false;
+        state.projects.push(action.payload);
+      })
+      .addCase(createProject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to create project';
       });
   },
 });
 
 export const { clearProjectError, clearCurrentProject } = projectSlice.actions;
-export default projectSlice.reducer; 
+export default projectSlice.reducer;

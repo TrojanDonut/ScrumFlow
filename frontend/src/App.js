@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import ProjectsList from './pages/ProjectsList';
 import ProjectDetail from './pages/ProjectDetail';
 import UserManagement from './pages/UserManagement';
+import CreateProject from './pages/CreateProject';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useSelector } from 'react-redux';
 
@@ -31,6 +32,12 @@ function App() {
           <Route path="/projects" element={
             <ProtectedRoute>
               <ProjectsList />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/new" element={
+            <ProtectedRoute>
+              <CreateProject />
             </ProtectedRoute>
           } />
           

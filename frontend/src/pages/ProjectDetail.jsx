@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { Alert, Spinner } from 'react-bootstrap';
+import { fetchProjectById } from '../store/slices/projectSlice';
 
 const ProjectDetail = () => {
   const { id } = useParams();
+  const dispatch = useDispatch();
   const { currentProject, loading, error } = useSelector(state => state.projects);
+
+  useEffect(() => {
+    dispatch(fetchProjectById(id));
+  }, [dispatch, id]);
 
   if (loading) {
     return (
