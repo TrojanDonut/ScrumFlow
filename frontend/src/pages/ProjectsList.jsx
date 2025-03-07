@@ -22,6 +22,16 @@ const ProjectsList = () => {
     );
   }
 
+    if (error) {
+    return (
+      <div className="d-flex justify-content-center mt-5">
+        <Alert variant="danger">
+          {error.detail ? error.detail : 'An error occurred'}
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
