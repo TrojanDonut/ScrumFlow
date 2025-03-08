@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { Button, Card, ListGroup, Modal, Form, Alert, Spinner } from 'react-bootstrap';
-import { fetchAllUsers, clearProjectError, fetchProjectById, removeMemberFromProject } from '../store/slices/projectSlice';
+import { fetchAllUsers, clearProjectError, fetchProjectById, removeMemberFromProject, addMemberToProject } from '../store/slices/projectSlice';
 
 const EditProjectMembers = () => {
   const dispatch = useDispatch();
@@ -26,8 +26,10 @@ const EditProjectMembers = () => {
   }, [dispatch, currentProject]);
 
   const handleAddUser = () => {
-    // Logic to add user to the project
-    // This would typically involve dispatching an action to update the project members
+    if (selectedUser) {
+      dispatch(addMemberToProject({ projectId: id, userId: selectedUser, role }));
+      handleCloseModal();
+    }
   };
 
   const handleCloseModal = () => {
@@ -37,7 +39,6 @@ const EditProjectMembers = () => {
   };
 
   const handleUserDelete = (userId) => {
-    console.log(userId, id);
     dispatch(removeMemberFromProject({ userId, projectId: id }));
   };
 
@@ -105,7 +106,7 @@ const EditProjectMembers = () => {
           <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleAddUser}>
+          <Button variant="primary" onClick={() => handleAddUser()}>
             Add User
           </Button>
         </Modal.Footer>

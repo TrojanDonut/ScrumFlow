@@ -1,8 +1,11 @@
 from rest_framework import serializers
 from .models import Project, ProjectMember, ProjectWallPost, ProjectWallComment, ProjectDocument
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class ProjectMemberSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
         model = ProjectMember
