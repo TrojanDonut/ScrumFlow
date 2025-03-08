@@ -62,7 +62,7 @@ const EditProjectMembers = () => {
           <ListGroup variant="flush">
             {assignedUsers.map(user => (
               <ListGroup.Item key={user.id}>
-                {user.user} - {user.role}
+                {user.user.username} - {user.role}
                 <Button variant="danger" onClick={() => handleUserDelete(user.id)} style={{ float: 'right' }}>
                   Delete
                 </Button>

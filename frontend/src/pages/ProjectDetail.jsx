@@ -52,7 +52,7 @@ const ProjectDetail = () => {
                 <ListGroup.Item key={member.id}>
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
-                      <strong>{member.user}</strong> ({member.role})
+                      <strong>{member.user.username}</strong> ({member.role})
                     </div>
                     <div>
                       {member.user.email}
