@@ -52,8 +52,8 @@ export const fetchProjectById = createAsyncThunk(
   }
 );
 
-export const fetchAllExistingProjectMembers = createAsyncThunk(
-  'projects/members',
+export const fetchAllUsers = createAsyncThunk(
+  'users/fetchAllUsers',
   async (_, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
@@ -63,7 +63,7 @@ export const fetchAllExistingProjectMembers = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.get(`${API_URL}/projects/members`, {
+      const response = await axios.get(`${API_URL}/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -183,15 +183,15 @@ const projectSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to create project';
       })
-      .addCase(fetchAllExistingProjectMembers.pending, (state) => {
+      .addCase(fetchAllUsers.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchAllExistingProjectMembers.fulfilled, (state, action) => {
+      .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.loading = false;
         state.members = action.payload;
       })
-      .addCase(fetchAllExistingProjectMembers.rejected, (state, action) => {
+      .addCase(fetchAllUsers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })

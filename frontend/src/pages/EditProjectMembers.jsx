@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { Button, Card, ListGroup, Modal, Form, Alert, Spinner } from 'react-bootstrap';
-import { fetchAllExistingProjectMembers, clearProjectError, fetchProjectById, removeMemberFromProject } from '../store/slices/projectSlice';
+import { fetchAllUsers, clearProjectError, fetchProjectById, removeMemberFromProject } from '../store/slices/projectSlice';
 
 const EditProjectMembers = () => {
   const dispatch = useDispatch();
@@ -15,14 +15,14 @@ const EditProjectMembers = () => {
 
   useEffect(() => {
     dispatch(fetchProjectById(id));
-    dispatch(fetchAllExistingProjectMembers());
+    dispatch(fetchAllUsers());
   }, [dispatch, id]);
 
   useEffect(() => {
     if (currentProject) {
       setAssignedUsers(currentProject.members);
     }
-    dispatch(fetchAllExistingProjectMembers());
+    dispatch(fetchAllUsers());
   }, [dispatch, currentProject]);
 
   const handleAddUser = () => {
@@ -87,7 +87,7 @@ const EditProjectMembers = () => {
               <Form.Control as="select" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
                 <option value="">Select a user</option>
                 {members.map(user => (
-                  <option key={user.id} value={user.id}>{user.user}</option>
+                  <option key={user.id} value={user.id}>{user.username}</option>
                 ))}
               </Form.Control>
             </Form.Group>
