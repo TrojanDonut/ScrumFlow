@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Button, Card, Alert } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { login, clearError } from '../store/slices/authSlice';
+import { login, clearError, fetchCurrentUser } from '../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -14,6 +14,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await dispatch(login({ username, password }));
+    dispatch(fetchCurrentUser());
     if (login.fulfilled.match(result)) {
       navigate('/dashboard');
     }

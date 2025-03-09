@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
 import Header from './components/Header';
@@ -10,10 +10,17 @@ import UserManagement from './pages/UserManagement';
 import CreateProject from './pages/CreateProject';
 import ProtectedRoute from './components/ProtectedRoute';
 import EditProjectMembers from './pages/EditProjectMembers';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchCurrentUser } from './store/slices/authSlice';
 
 function App() {
   const { isAuthenticated } = useSelector(state => state.auth);
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
 
   return (
     <>
@@ -37,7 +44,7 @@ function App() {
           } />
 
           <Route path="/projects/new" element={
-            <ProtectedRoute>
+            <ProtectedRoute adminOnly={true}>
               <CreateProject />
             </ProtectedRoute>
           } />

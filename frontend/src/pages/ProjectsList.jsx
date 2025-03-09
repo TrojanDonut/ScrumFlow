@@ -7,6 +7,7 @@ import { fetchProjects, clearProjectError } from '../store/slices/projectSlice';
 const ProjectsList = () => {
   const dispatch = useDispatch();
   const { projects, loading, error } = useSelector(state => state.projects);
+  const { user } = useSelector(state => state.auth);
 
   useEffect(() => {
     dispatch(fetchProjects());
@@ -36,7 +37,9 @@ const ProjectsList = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Projects</h1>
-        <Button variant="primary" as={Link} to="/projects/new">Create Project</Button>
+        {user.role === 'SYSTEM_ADMIN' && (
+          <Button variant="primary" as={Link} to="/users">Manage Users</Button>
+        )}
       </div>
 
       {error && (
