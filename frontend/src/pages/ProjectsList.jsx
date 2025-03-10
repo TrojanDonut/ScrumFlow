@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Card, Button, Alert, Table, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { fetchProjects, clearProjectError } from '../store/slices/projectSlice';
+import { fetchProjects, clearProjectError, deleteProject } from '../store/slices/projectSlice';
 
 const ProjectsList = () => {
   const dispatch = useDispatch();
@@ -12,6 +12,12 @@ const ProjectsList = () => {
   useEffect(() => {
     dispatch(fetchProjects());
   }, [dispatch]);
+
+
+  const handleDelete = async (projectId) => {
+      await dispatch(deleteProject(projectId));
+      dispatch(fetchProjects());
+  };
 
   if (loading) {
     return (
@@ -79,6 +85,14 @@ const ProjectsList = () => {
                   >
                     View
                   </Button>
+                  <Button 
+                  variant="outline-danger" 
+                  size="sm" 
+                  onClick={() => handleDelete(project.id)}
+                  className="ms-2"
+                  >
+                  Delete
+                </Button>
                 </td>
               </tr>
             ))}
