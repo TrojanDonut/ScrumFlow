@@ -37,8 +37,8 @@ const ProjectsList = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Projects</h1>
-        {user.role === 'SYSTEM_ADMIN' && (
-          <Button variant="primary" as={Link} to="/users">Manage Users</Button>
+        {user?.role === 'SYSTEM_ADMIN' && (
+          <Button variant="primary" as={Link} to="/projects/new">Create Project</Button>
         )}
       </div>
 
