@@ -1,9 +1,21 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { Spinner } from 'react-bootstrap';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { isAuthenticated, user } = useSelector(state => state.auth);
+  const { isAuthenticated, user, loading } = useSelector(state => state.auth);
+
+  if (loading || user === null) {
+    return (
+      <div className="d-flex justify-content-center mt-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>
+    );
+  }
+
 
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
@@ -16,4 +28,4 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   return children;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;
