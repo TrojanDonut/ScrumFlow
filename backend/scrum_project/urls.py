@@ -20,12 +20,12 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+   path('admin/', admin.site.urls),
     
     # API URLs
-    path('api/', include('users.urls')),
+   path('api/', include('users.urls')),
     # Temporarily commented out for testing authentication
-    # path('api/', include('projects.urls')),
+   path('api/', include('projects.urls')),
     # path('api/', include('sprints.urls')),
     # path('api/', include('stories.urls')),
     # path('api/', include('tasks.urls')),

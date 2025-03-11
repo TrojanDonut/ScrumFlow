@@ -2,15 +2,22 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Card, Button, Alert, Table, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { fetchProjects, clearProjectError } from '../store/slices/projectSlice';
+import { fetchProjects, clearProjectError, deleteProject } from '../store/slices/projectSlice';
 
 const ProjectsList = () => {
   const dispatch = useDispatch();
   const { projects, loading, error } = useSelector(state => state.projects);
+  const { user } = useSelector(state => state.auth);
 
   useEffect(() => {
     dispatch(fetchProjects());
   }, [dispatch]);
+
+
+  const handleDelete = async (projectId) => {
+      await dispatch(deleteProject(projectId));
+      dispatch(fetchProjects());
+  };
 
   if (loading) {
     return (
@@ -22,11 +29,23 @@ const ProjectsList = () => {
     );
   }
 
+    if (error) {
+    return (
+      <div className="d-flex justify-content-center mt-5">
+        <Alert variant="danger">
+          {error.detail ? error.detail : 'An error occurred'}
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Projects</h1>
-        <Button variant="primary" as={Link} to="/projects/new">Create Project</Button>
+        {user?.role === 'SYSTEM_ADMIN' && (
+          <Button variant="primary" as={Link} to="/projects/new">Create Project</Button>
+        )}
       </div>
 
       {error && (
@@ -66,6 +85,14 @@ const ProjectsList = () => {
                   >
                     View
                   </Button>
+                  <Button 
+                  variant="outline-danger" 
+                  size="sm" 
+                  onClick={() => handleDelete(project.id)}
+                  className="ms-2"
+                  >
+                  Delete
+                </Button>
                 </td>
               </tr>
             ))}

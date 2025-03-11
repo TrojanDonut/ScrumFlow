@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     # Local apps
     'users',
     # Temporarily commented out for testing authentication
-    # 'projects',
+    'projects',
     # 'sprints',
     # 'stories',
     # 'tasks',
@@ -145,6 +145,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # Custom management command to wait for the database to be available
 WAIT_FOR_DB_TIMEOUT = int(os.environ.get('WAIT_FOR_DB_TIMEOUT', 20))

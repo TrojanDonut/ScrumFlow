@@ -50,11 +50,18 @@ export const fetchCurrentUser = createAsyncThunk(
   async (_, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
-      if (!auth.isAuthenticated) {
-        return rejectWithValue('Not authenticated');
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
       }
 
-      const response = await axios.get(`${API_URL}/users/me/`);
+      const response = await axios.get(`${API_URL}/users/me/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -125,7 +132,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
       // Logout reducers
       .addCase(logout.fulfilled, (state) => {
         state.isAuthenticated = false;
