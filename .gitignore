@@ -1,0 +1,54 @@
+# --- General ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# If using virtualenvwrapper
+.envrc
+.workon
+
+# Virtual environment
+venv/
+.venv/
+
+# Python cache files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Local environment variables
+.env
+.env.local
+
+# Database files (SQLite example)
+# *.sqlite3
+
+# Django static and media files (if stored locally)
+staticfiles/
+media/
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-error.log
+pnpm-debug.log
+
+# Production build
+build/
+dist/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+
+# Testing
+coverage/
+
+
+# Cursor
+.cursor/
