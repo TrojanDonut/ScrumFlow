@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Editor directories and files
+.idea
+.vscode
+*.swp
+*.swo
+
+# Database
+*.sqlite3
+
+# Media and static files
+media/
+staticfiles/ 

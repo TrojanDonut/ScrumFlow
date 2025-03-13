@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Alert, Spinner, Card, ListGroup, Button } from 'react-bootstrap';
 import { fetchProjectById } from '../store/slices/projectSlice';
+import { formatErrorMessage } from '../utils/errorUtils';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -24,7 +25,7 @@ const ProjectDetail = () => {
   }
 
   if (error) {
-    return <Alert variant="danger">{error}</Alert>;
+    return <Alert variant="danger">{formatErrorMessage(error)}</Alert>;
   }
 
   if (!currentProject) {

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { Button, Card, ListGroup, Modal, Form, Alert, Spinner } from 'react-bootstrap';
 import { fetchAllUsers, clearProjectError, fetchProjectById, removeMemberFromProject, addMemberToProject } from '../store/slices/projectSlice';
+import { formatErrorMessage } from '../utils/errorUtils';
 
 const EditProjectMembers = () => {
   const dispatch = useDispatch();
@@ -47,7 +48,7 @@ const EditProjectMembers = () => {
       <h1>Edit Project Members</h1>
       {error && (
         <Alert variant="danger" onClose={() => dispatch(clearProjectError())} dismissible>
-          {error}
+          {formatErrorMessage(error)}
         </Alert>
       )}
       {loading ? (
