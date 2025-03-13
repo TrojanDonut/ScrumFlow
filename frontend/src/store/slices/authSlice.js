@@ -40,7 +40,14 @@ export const login = createAsyncThunk(
       const decoded = jwtDecode(access);
       return { token: access, refreshToken: refresh, user: decoded };
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      // Check if the error is due to 2FA requirement
+      if (error.response && error.response.data && error.response.data.two_factor_required) {
+        return rejectWithValue({
+          detail: 'Two-factor authentication required',
+          two_factor_required: true
+        });
+      }
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
@@ -84,6 +91,125 @@ export const logout = createAsyncThunk(
   }
 );
 
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async (passwordData, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/auth/change-password/`, 
+        passwordData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Update tokens if returned
+      if (response.data.access && response.data.refresh) {
+        localStorage.setItem('access', response.data.access);
+        localStorage.setItem('refresh', response.data.refresh);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+      }
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const setupTwoFactor = createAsyncThunk(
+  'auth/setupTwoFactor',
+  async (password, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/auth/2fa/setup/`, 
+        { password },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const verifyTwoFactor = createAsyncThunk(
+  'auth/verifyTwoFactor',
+  async (data, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/auth/2fa/verify/`, 
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const disableTwoFactor = createAsyncThunk(
+  'auth/disableTwoFactor',
+  async (password, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/auth/2fa/disable/`, 
+        { password },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const initialState = {
   token: isTokenValid(token) ? token : null,
   refreshToken: refreshToken || null,
@@ -91,6 +217,17 @@ const initialState = {
   user: null,
   loading: false,
   error: null,
+  twoFactorSetup: {
+    qrCode: null,
+    secretKey: null,
+    loading: false,
+    error: null,
+  },
+  passwordChange: {
+    success: false,
+    loading: false,
+    error: null,
+  },
 };
 
 const authSlice = createSlice({
@@ -99,6 +236,21 @@ const authSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null;
+    },
+    clearPasswordChangeState: (state) => {
+      state.passwordChange = {
+        success: false,
+        loading: false,
+        error: null,
+      };
+    },
+    clearTwoFactorSetupState: (state) => {
+      state.twoFactorSetup = {
+        qrCode: null,
+        secretKey: null,
+        loading: false,
+        error: null,
+      };
     },
   },
   extraReducers: (builder) => {
@@ -132,15 +284,84 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      
       // Logout reducers
       .addCase(logout.fulfilled, (state) => {
         state.isAuthenticated = false;
         state.token = null;
         state.refreshToken = null;
         state.user = null;
+      })
+      
+      // Change password reducers
+      .addCase(changePassword.pending, (state) => {
+        state.passwordChange.loading = true;
+        state.passwordChange.error = null;
+        state.passwordChange.success = false;
+      })
+      .addCase(changePassword.fulfilled, (state, action) => {
+        state.passwordChange.loading = false;
+        state.passwordChange.success = true;
+        if (action.payload.access && action.payload.refresh) {
+          state.token = action.payload.access;
+          state.refreshToken = action.payload.refresh;
+        }
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.passwordChange.loading = false;
+        state.passwordChange.error = action.payload;
+      })
+      
+      // Setup two-factor authentication reducers
+      .addCase(setupTwoFactor.pending, (state) => {
+        state.twoFactorSetup.loading = true;
+        state.twoFactorSetup.error = null;
+      })
+      .addCase(setupTwoFactor.fulfilled, (state, action) => {
+        state.twoFactorSetup.loading = false;
+        state.twoFactorSetup.qrCode = action.payload.qr_code;
+        state.twoFactorSetup.secretKey = action.payload.secret_key;
+      })
+      .addCase(setupTwoFactor.rejected, (state, action) => {
+        state.twoFactorSetup.loading = false;
+        state.twoFactorSetup.error = action.payload;
+      })
+      
+      // Verify two-factor authentication reducers
+      .addCase(verifyTwoFactor.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyTwoFactor.fulfilled, (state) => {
+        state.loading = false;
+        state.user = {
+          ...state.user,
+          two_factor_enabled: true
+        };
+      })
+      .addCase(verifyTwoFactor.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Disable two-factor authentication reducers
+      .addCase(disableTwoFactor.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(disableTwoFactor.fulfilled, (state) => {
+        state.loading = false;
+        state.user = {
+          ...state.user,
+          two_factor_enabled: false
+        };
+      })
+      .addCase(disableTwoFactor.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, clearPasswordChangeState, clearTwoFactorSetupState } = authSlice.actions;
 export default authSlice.reducer; 

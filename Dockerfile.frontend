@@ -1,0 +1,21 @@
+FROM node:16-alpine
+
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy project files
+COPY frontend/ .
+
+# Fix permissions for node_modules
+RUN mkdir -p /app/node_modules/.cache && chmod -R 777 /app/node_modules/.cache
+
+# Expose port
+EXPOSE 3000
+
+# Start development server
+CMD ["npm", "start"] 

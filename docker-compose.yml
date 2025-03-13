@@ -2,30 +2,36 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py create_initial_data &&
-             python manage.py runserver 0.0.0.0:8000"
-    volumes:
-      - ./backend:/app
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app
     environment:
       - DEBUG=1
-      - SECRET_KEY=dev_secret_key_change_in_production
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - ALLOWED_HOSTS=localhost 127.0.0.1
+    restart: "no"
 
   frontend:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    ports:
-      - "3000:3000"
+      - frontend-node-modules:/app/node_modules/.cache
     environment:
       - REACT_APP_API_URL=http://localhost:8000/api
       - CHOKIDAR_USEPOLLING=true
-      - WDS_SOCKET_PORT=0
-    stdin_open: true
     depends_on:
-      - backend 
+      - backend
+    restart: "no"
+    stdin_open: true # for react-scripts to work properly
+
+volumes:
+  frontend-node-modules: 
