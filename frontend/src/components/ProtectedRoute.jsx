@@ -6,6 +6,10 @@ import { Spinner } from 'react-bootstrap';
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { isAuthenticated, user, loading } = useSelector(state => state.auth);
 
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
   if (loading || user === null) {
     return (
       <div className="d-flex justify-content-center mt-5">
@@ -14,11 +18,6 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
         </Spinner>
       </div>
     );
-  }
-
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
   }
 
   if (adminOnly && user?.role !== 'SYSTEM_ADMIN') {
