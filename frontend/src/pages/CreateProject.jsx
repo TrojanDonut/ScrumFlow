@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { createProject, clearProjectError } from '../store/slices/projectSlice';
 import { useNavigate } from 'react-router-dom';
+import { formatErrorMessage } from '../utils/errorUtils';
 
 const CreateProject = () => {
   const dispatch = useDispatch();
@@ -35,7 +36,7 @@ const CreateProject = () => {
         <h1>Create Project</h1>
         {error && (
           <Alert variant="danger" onClose={() => dispatch(clearProjectError())} dismissible>
-            {error}
+            {formatErrorMessage(error)}
           </Alert>
         )}
         <Form onSubmit={handleSubmit}>

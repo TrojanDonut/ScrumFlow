@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Card, Button, Alert, Table, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { fetchProjects, clearProjectError, deleteProject } from '../store/slices/projectSlice';
+import { formatErrorMessage } from '../utils/errorUtils';
 
 const ProjectsList = () => {
   const dispatch = useDispatch();
@@ -13,10 +14,9 @@ const ProjectsList = () => {
     dispatch(fetchProjects());
   }, [dispatch]);
 
-
   const handleDelete = async (projectId) => {
-      await dispatch(deleteProject(projectId));
-      dispatch(fetchProjects());
+    await dispatch(deleteProject(projectId));
+    dispatch(fetchProjects());
   };
 
   if (loading) {
@@ -29,11 +29,11 @@ const ProjectsList = () => {
     );
   }
 
-    if (error) {
+  if (error) {
     return (
       <div className="d-flex justify-content-center mt-5">
         <Alert variant="danger">
-          {error.detail ? error.detail : 'An error occurred'}
+          {formatErrorMessage(error)}
         </Alert>
       </div>
     );
@@ -50,7 +50,7 @@ const ProjectsList = () => {
 
       {error && (
         <Alert variant="danger" onClose={() => dispatch(clearProjectError())} dismissible>
-          {error}
+          {formatErrorMessage(error)}
         </Alert>
       )}
 
@@ -86,13 +86,13 @@ const ProjectsList = () => {
                     View
                   </Button>
                   <Button 
-                  variant="outline-danger" 
-                  size="sm" 
-                  onClick={() => handleDelete(project.id)}
-                  className="ms-2"
+                    variant="outline-danger" 
+                    size="sm" 
+                    onClick={() => handleDelete(project.id)}
+                    className="ms-2"
                   >
-                  Delete
-                </Button>
+                    Delete
+                  </Button>
                 </td>
               </tr>
             ))}

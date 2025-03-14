@@ -1,4 +1,4 @@
-# Scrum Workflow Application
+# ScrumFlow
 
 A comprehensive web application for managing Scrum projects, built with Django (backend) and React (frontend).
 
@@ -8,9 +8,19 @@ This application provides a complete solution for Scrum teams to manage their pr
 
 ## ✨ Features
 
+- User authentication with JWT
+- Two-factor authentication
+- Password security (min 12 chars, strength meter, etc.)
+- Role-based access control (System Admin, Product Owner, Scrum Master, Developer)
+- Project management
+- Sprint planning and tracking
+- User story management with acceptance criteria
+- Task management and assignment
+- Team communication tools
+
 ### User Management
 - User registration and authentication
-- Role-based access control (System Admin, Product Owner, Scrum Master, Developer)
+- Role-based access control
 - User profile management
 
 ### Project Management
@@ -52,37 +62,85 @@ This application provides a complete solution for Scrum teams to manage their pr
 - [Docker Compose](https://docs.docker.com/compose/install/) (version 2.0+)
 - [Git](https://git-scm.com/downloads) (version 2.30+)
 
-### Installation
+### Docker Setup (Recommended)
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/scrum-workflow-app.git
-   cd scrum-workflow-app
+   git clone <repository-url>
+   cd ScrumFlow
    ```
 
-2. **Build and start the Docker containers**
+2. **Start the application using the provided script**
    ```bash
-   # Build the Docker images
-   docker-compose build
-   
-   # Start the containers in detached mode
-   docker-compose up -d
+   ./docker-start.sh
    ```
+   
+   This script will:
+   - Stop any existing containers
+   - Remove dangling containers
+   - Build and start the containers with docker-compose
 
-3. **Set up the database**
+   Alternatively, you can use docker-compose directly:
    ```bash
-   # Apply database migrations
-   docker-compose exec backend python manage.py migrate
-   
-   # Create initial test data (users and sample project)
-   docker-compose exec backend python manage.py create_initial_data
+   docker-compose up --build
    ```
 
-4. **Access the application**
-   - Frontend: [http://localhost:3000](http://localhost:3000)
-   - Backend API: [http://localhost:8000/api](http://localhost:8000/api)
-   - API documentation: [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
-   - Admin interface: [http://localhost:8000/admin](http://localhost:8000/admin)
+3. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000/api
+   - API documentation: http://localhost:8000/api/swagger/
+
+### Manual Setup (without Docker)
+
+#### Backend Setup
+
+1. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. Install dependencies:
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
+
+3. Run migrations:
+   ```bash
+   python manage.py migrate
+   ```
+
+4. Start the server:
+   ```bash
+   python manage.py runserver
+   ```
+
+#### Frontend Setup
+
+1. Install dependencies:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. Start the development server:
+   ```bash
+   npm start
+   ```
+
+### Development
+
+- The Docker setup includes volume mounts, so changes to the code will be reflected in real-time.
+- Backend changes will trigger the Django auto-reload.
+- Frontend changes will trigger the React hot-reload.
+
+### Stopping the Application
+
+Press `Ctrl+C` in the terminal where docker-start.sh is running, or run:
+```bash
+docker-compose down
+```
 
 ### Troubleshooting
 
@@ -106,31 +164,17 @@ If you encounter any issues during setup:
    docker-compose run --rm backend rm -f db.sqlite3
    docker-compose up -d
    docker-compose exec backend python manage.py migrate
-   docker-compose exec backend python manage.py create_initial_data
    ```
-
-### Default Users
-
-The application comes with pre-configured users for testing:
-
-| Username | Password | Role |
-|----------|----------|------|
-| admin | admin123 | System Administrator |
-| product_owner | password123 | Product Owner |
-| scrum_master | password123 | Scrum Master |
-| developer | password123 | Developer |
-
 
 ## 💻 Development
 
 ### Project Structure
 
 ```
-scrum-app/
+ScrumFlow/
 ├── backend/                 # Django backend
 │   ├── manage.py            # Django management script
 │   ├── requirements.txt     # Python dependencies
-│   ├── Dockerfile           # Backend Docker configuration
 │   ├── scrum_project/       # Main Django project
 │   ├── users/               # User management app
 │   ├── projects/            # Project management app
@@ -144,13 +188,17 @@ scrum-app/
 │   │   ├── components/      # Reusable UI components
 │   │   ├── pages/           # Page components
 │   │   ├── store/           # Redux store configuration
-│   │   │   └── slices/      # Redux slices for state management
+│   │   ├── utils/           # Utility functions
 │   │   ├── App.js           # Main application component
 │   │   └── index.js         # Application entry point
 │   ├── package.json         # Node.js dependencies
 │   └── Dockerfile           # Frontend Docker configuration
 │
-└── docker-compose.yml       # Docker Compose configuration
+├── docker-compose.yml       # Docker Compose configuration
+├── Dockerfile.backend       # Backend Docker configuration
+├── Dockerfile.frontend      # Frontend Docker configuration
+├── docker-start.sh          # Docker startup script
+└── start.sh                 # Application startup script
 ```
 
 ### Backend Architecture
@@ -165,68 +213,23 @@ The backend is built with Django and Django REST Framework, following a modular 
 
 ### Frontend Architecture
 
-The frontend is built with React and Redux, using a component-based architecture:
+The frontend is built with React, using a component-based architecture:
 
 - **components**: Reusable UI components
 - **pages**: Page-level components
-- **store**: Redux store with slices for different data domains
-- **services**: API service functions for backend communication
+- **store**: State management
+- **utils**: Utility functions and services for backend communication
 
 ### API Documentation
 
-The API documentation is available at [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/) when the application is running. It provides detailed information about all available endpoints, request/response formats, and authentication requirements.
-
-### Running Tests
-
-To run the backend tests:
-
-```bash
-# Run all tests
-docker-compose exec backend python manage.py test
-
-# Run tests for a specific app
-docker-compose exec backend python manage.py test users
-```
-
-To run the frontend tests:
-
-```bash
-docker-compose exec frontend npm test
-```
-
-### Development Workflow
-
-1. **Create a feature branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make your changes**:
-   - Backend: Modify Django code in the `backend/` directory
-   - Frontend: Modify React code in the `frontend/` directory
-
-3. **Test your changes**:
-   - Run the tests as described above
-   - Manually test the feature in the browser
-
-4. **Commit your changes**:
-   ```bash
-   git add .
-   git commit -m "Add your feature description"
-   ```
-
-5. **Push your changes**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-6. **Create a pull request** for code review
+The API documentation is available at http://localhost:8000/api/swagger/ when the application is running. It provides detailed information about all available endpoints, request/response formats, and authentication requirements.
 
 ## 🔒 Security
 
 The application implements several security measures:
 
 - JWT-based authentication
+- Two-factor authentication
 - Password validation with minimum length and complexity requirements
 - CSRF protection
 - Role-based access control

@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
+import json
 
 User = get_user_model()
 
@@ -87,4 +88,109 @@ class UserAuthenticationTests(TestCase):
         logout_data = {'refresh': login_response.data['refresh']}
         response = self.client.post(self.logout_url, logout_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['detail'], 'Successfully logged out.') 
+        self.assertEqual(response.data['detail'], 'Successfully logged out.')
+
+class UserProfileUpdateTests(TestCase):
+    """Test the user profile update API"""
+    
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpassword123',
+            first_name='Test',
+            last_name='User'
+        )
+        self.client.force_authenticate(user=self.user)
+        self.url = reverse('users:profile-update')
+        
+    def test_update_profile_success(self):
+        """Test updating user profile with valid data"""
+        payload = {
+            'username': 'newtestuser',
+            'email': 'newtest@example.com',
+            'first_name': 'New',
+            'last_name': 'Name'
+        }
+        
+        response = self.client.put(self.url, payload)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, payload['username'])
+        self.assertEqual(self.user.email, payload['email'])
+        self.assertEqual(self.user.first_name, payload['first_name'])
+        self.assertEqual(self.user.last_name, payload['last_name'])
+        
+    def test_update_profile_duplicate_username(self):
+        """Test updating user profile with a duplicate username"""
+        # Create another user with a different username
+        User.objects.create_user(
+            username='existinguser',
+            email='existing@example.com',
+            password='testpassword123'
+        )
+        
+        payload = {
+            'username': 'existinguser',
+            'email': 'newtest@example.com',
+            'first_name': 'New',
+            'last_name': 'Name'
+        }
+        
+        response = self.client.put(self.url, payload)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('username', response.data)
+        
+    def test_update_profile_duplicate_email(self):
+        """Test updating user profile with a duplicate email"""
+        # Create another user with a different email
+        User.objects.create_user(
+            username='anotheruser',
+            email='existing@example.com',
+            password='testpassword123'
+        )
+        
+        payload = {
+            'username': 'newtestuser',
+            'email': 'existing@example.com',
+            'first_name': 'New',
+            'last_name': 'Name'
+        }
+        
+        response = self.client.put(self.url, payload)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('email', response.data)
+        
+    def test_update_profile_partial(self):
+        """Test updating only some fields of the user profile"""
+        payload = {
+            'first_name': 'NewFirstName',
+            'last_name': 'NewLastName'
+        }
+        
+        response = self.client.patch(self.url, payload)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, payload['first_name'])
+        self.assertEqual(self.user.last_name, payload['last_name'])
+        # Username and email should remain unchanged
+        self.assertEqual(self.user.username, 'testuser')
+        self.assertEqual(self.user.email, 'test@example.com')
+        
+    def test_update_profile_unauthenticated(self):
+        """Test that unauthenticated users cannot update profiles"""
+        self.client.force_authenticate(user=None)
+        
+        payload = {
+            'username': 'newtestuser',
+            'email': 'newtest@example.com'
+        }
+        
+        response = self.client.put(self.url, payload)
+        
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED) 

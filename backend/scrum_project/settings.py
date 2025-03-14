@@ -33,6 +33,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
     'corsheaders',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'django_otp.plugins.otp_static',
     
     # Local apps
     'users',
@@ -50,6 +53,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -100,6 +104,9 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# Maximum password length
+PASSWORD_MAX_LENGTH = 128
 
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
@@ -152,4 +159,7 @@ CORS_ALLOW_CREDENTIALS = True
 WAIT_FOR_DB_TIMEOUT = int(os.environ.get('WAIT_FOR_DB_TIMEOUT', 20))
 
 # Create a way to programmatically check if we're running tests
-TESTING = 'test' in sys.argv 
+TESTING = 'test' in sys.argv
+
+# Two-factor authentication settings
+OTP_TOTP_ISSUER = 'ScrumFlow' 

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Navbar, Nav, Container, Button } from 'react-bootstrap';
+import { Navbar, Nav, Container, Button, NavDropdown } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
+import { FaUserCog, FaLock, FaShieldAlt, FaUser } from 'react-icons/fa';
 
 const Header = () => {
   const { isAuthenticated, user } = useSelector(state => state.auth);
@@ -25,8 +26,8 @@ const Header = () => {
               <>
                 <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
                 <Nav.Link as={Link} to="/projects">Projects</Nav.Link>
-                {user?.is_system_admin && (
-                  <Nav.Link as={Link} to="/users">Users</Nav.Link>
+                {user?.role === 'SYSTEM_ADMIN' && (
+                  <Nav.Link as={Link} to="/users">User Management</Nav.Link>
                 )}
               </>
             )}
@@ -34,10 +35,33 @@ const Header = () => {
           <Nav>
             {isAuthenticated ? (
               <>
-                <Navbar.Text className="me-3">
-                  Signed in as: {user?.username}
-                </Navbar.Text>
-                <Button variant="outline-light" onClick={handleLogout}>Logout</Button>
+                <NavDropdown 
+                  title={
+                    <span>
+                      <FaUserCog className="me-1" />
+                      {user?.username}
+                    </span>
+                  } 
+                  id="user-dropdown"
+                  align="end"
+                >
+                  <NavDropdown.Item as={Link} to="/profile">
+                    <FaUser className="me-2" />
+                    My Profile
+                  </NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/change-password">
+                    <FaLock className="me-2" />
+                    Change Password
+                  </NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/two-factor-setup">
+                    <FaShieldAlt className="me-2" />
+                    {user?.two_factor_enabled ? 'Manage Two-Factor Auth' : 'Enable Two-Factor Auth'}
+                  </NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item onClick={handleLogout}>
+                    Logout
+                  </NavDropdown.Item>
+                </NavDropdown>
               </>
             ) : (
               <Nav.Link as={Link} to="/login">Login</Nav.Link>

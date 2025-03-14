@@ -10,6 +10,9 @@ import UserManagement from './pages/UserManagement';
 import CreateProject from './pages/CreateProject';
 import ProtectedRoute from './components/ProtectedRoute';
 import EditProjectMembers from './pages/EditProjectMembers';
+import ChangePassword from './pages/ChangePassword';
+import TwoFactorSetup from './pages/TwoFactorSetup';
+import UserProfile from './pages/UserProfile';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCurrentUser } from './store/slices/authSlice';
 
@@ -64,6 +67,24 @@ function App() {
           <Route path="/users" element={
             <ProtectedRoute adminOnly>
               <UserManagement />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/change-password" element={
+            <ProtectedRoute>
+              <ChangePassword />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/two-factor-setup" element={
+            <ProtectedRoute>
+              <TwoFactorSetup />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <UserProfile />
             </ProtectedRoute>
           } />
           
