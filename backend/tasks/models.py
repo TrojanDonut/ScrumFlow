@@ -14,12 +14,15 @@ class Task(models.Model):
         COMPLETED = 'COMPLETED', 'Completed'
     
     story = models.ForeignKey(UserStory, on_delete=models.CASCADE, related_name='tasks')
+    title = models.CharField(max_length=200, default=None)
     description = models.TextField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.UNASSIGNED)
     estimated_hours = models.DecimalField(
         max_digits=5, 
         decimal_places=2, 
-        validators=[MinValueValidator(0.01)]
+        validators=[MinValueValidator(0.00)],
+        null=True,
+        blank=True
     )
     remaining_hours = models.DecimalField(
         max_digits=5, 
