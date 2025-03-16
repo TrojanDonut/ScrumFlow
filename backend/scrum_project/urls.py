@@ -26,7 +26,7 @@ urlpatterns = [
    path('api/', include('users.urls')),
     # Temporarily commented out for testing authentication
    path('api/', include('projects.urls')),
-   #path('api/', include('sprints.urls')),
+   path('api/', include('sprints.urls')),
    #path('api/', include('stories.urls')),
    #path('api/', include('tasks.urls')),
     

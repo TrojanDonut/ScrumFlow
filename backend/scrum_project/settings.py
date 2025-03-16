@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'users',
     # Temporarily commented out for testing authentication
     'projects',
-    # 'sprints',
+    'sprints',
     # 'stories',
     # 'tasks',
 ]
