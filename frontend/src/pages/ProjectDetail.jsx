@@ -9,6 +9,7 @@ const ProjectDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { currentProject, loading, error } = useSelector(state => state.projects);
+  const { token } = useSelector(state => state.auth); // Get token from auth state
 
   const [sprints, setSprints] = useState([]);
   const [formData, setFormData] = useState({
@@ -75,7 +76,10 @@ const ProjectDetail = () => {
 
     try {
       const response = await axios.post(`http://localhost:8000/api/projects/${id}/sprints/`, formData, {
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` // Add token to headers
+        },
       });
 
       setSprints([...sprints, response.data]);
