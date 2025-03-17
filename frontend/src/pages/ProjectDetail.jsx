@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Alert, Spinner, Card, ListGroup, Button } from "react-bootstrap";
 import { fetchProjectById } from "../store/slices/projectSlice";
 import axios from "axios";
+import { createSprint } from "../store/slices/sprintSlice";
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -75,26 +76,11 @@ const ProjectDetail = () => {
     }
 
     try {
-      const response = await axios.post(`http://localhost:8000/api/projects/${id}/sprints/`, formData, {
-        headers: { 
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}` // Add token to headers
-        },
-      });
-
-      setSprints([...sprints, response.data]);
+      await dispatch(createSprint({ projectId: id, sprintData: formData })).unwrap();
+      setSprints([...sprints, formData]);
       setFormData({ start_date: "", end_date: "", velocity: 0 });
     } catch (err) {
-      if (err.response) {
-        // Server responded with a status other than 200 range
-        setErrorSprint(`Error: ${err.response.status} - ${err.response.data}`);
-      } else if (err.request) {
-        // Request was made but no response received
-        setErrorSprint("Error: No response from server. Please try again later.");
-      } else {
-        // Something else happened while setting up the request
-        setErrorSprint(`Error: ${err.message}`);
-      }
+      setErrorSprint(`Error: ${err}`);
     } finally {
       setLoadingSprint(false);
     }

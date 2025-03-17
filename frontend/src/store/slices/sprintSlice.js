@@ -55,7 +55,7 @@ export const fetchActiveSprint = createAsyncThunk(
 
 export const createSprint = createAsyncThunk(
   'sprints/createSprint',
-  async ({ projectId, sprintData, token }, { rejectWithValue, getState }) => {
+  async ({ projectId, sprintData }, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
       const token = auth.token;
