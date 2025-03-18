@@ -6,9 +6,22 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 // Async thunks
 export const fetchSprints = createAsyncThunk(
   'sprints/fetchSprints',
-  async (projectId, { rejectWithValue }) => {
+  async (projectId, { rejectWithValue, getState }) => {
     try {
-      const response = await axios.get(`${API_URL}/projects/${projectId}/sprints/`);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/projects/${projectId}/sprints/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+        
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -18,9 +31,21 @@ export const fetchSprints = createAsyncThunk(
 
 export const fetchActiveSprint = createAsyncThunk(
   'sprints/fetchActiveSprint',
-  async (projectId, { rejectWithValue }) => {
+  async (projectId, { rejectWithValue, getState }) => {
     try {
-      const response = await axios.get(`${API_URL}/projects/${projectId}/active-sprint/`);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/projects/${projectId}/active-sprint/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -30,9 +55,22 @@ export const fetchActiveSprint = createAsyncThunk(
 
 export const createSprint = createAsyncThunk(
   'sprints/createSprint',
-  async ({ projectId, sprintData }, { rejectWithValue }) => {
+  async ({ projectId, sprintData }, { rejectWithValue, getState }) => {
     try {
-      const response = await axios.post(`${API_URL}/projects/${projectId}/sprints/`, sprintData);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(`${API_URL}/projects/${projectId}/sprints/`, sprintData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -102,4 +140,4 @@ const sprintSlice = createSlice({
 });
 
 export const { clearSprintError } = sprintSlice.actions;
-export default sprintSlice.reducer; 
+export default sprintSlice.reducer;
