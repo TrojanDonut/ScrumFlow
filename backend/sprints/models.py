@@ -11,7 +11,11 @@ class Sprint(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     velocity = models.IntegerField()
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -27,7 +31,17 @@ class Sprint(models.Model):
         if self.start_date and self.end_date:
             # Check that end date is after start date
             if self.end_date < self.start_date:
-                raise ValidationError("The end date cannot be before the start date. Please select a valid date range.")
+                raise ValidationError(
+                    "The end date cannot be before the start date. "
+                    "Please select a valid date range."
+                )
+            
+            # Check that start date is not in the past
+            if self.start_date < timezone.now().date():
+                raise ValidationError(
+                    "The start date cannot be in the past. "
+                    "Please select a future date."
+                )
             
             # Check for overlapping sprints in the same project
             overlapping_sprints = Sprint.objects.filter(
@@ -41,7 +55,10 @@ class Sprint(models.Model):
                 overlapping_sprints = overlapping_sprints.exclude(pk=self.pk)
             
             if overlapping_sprints.exists():
-                raise ValidationError("The sprint dates overlap with an existing sprint. Please choose different dates.")
+                raise ValidationError(
+                    "The sprint dates overlap with an existing sprint. "
+                    "Please choose different dates."
+                )
     
     def save(self, *args, **kwargs):
         self.clean()
