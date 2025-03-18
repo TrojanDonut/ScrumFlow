@@ -7,11 +7,15 @@ from projects.models import Project
 
 class Sprint(models.Model):
     """Sprint model for managing time-boxed development periods"""
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='sprints')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     start_date = models.DateField()
     end_date = models.DateField()
-    velocity = models.PositiveIntegerField(default=0)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    velocity = models.IntegerField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -20,14 +24,24 @@ class Sprint(models.Model):
         unique_together = [['project', 'start_date'], ['project', 'end_date']]
     
     def __str__(self):
-        return f"Sprint in {self.project.name} ({self.start_date} to {self.end_date})"
+        return f"Sprint {self.id} for project {self.project.name}"
     
     def clean(self):
         """Validate sprint dates and check for overlaps"""
         if self.start_date and self.end_date:
             # Check that end date is after start date
             if self.end_date < self.start_date:
-                raise ValidationError("End date must be after start date")
+                raise ValidationError(
+                    "The end date cannot be before the start date. "
+                    "Please select a valid date range."
+                )
+            
+            # Check that start date is not in the past
+            if self.start_date < timezone.now().date():
+                raise ValidationError(
+                    "The start date cannot be in the past. "
+                    "Please select a future date."
+                )
             
             # Check for overlapping sprints in the same project
             overlapping_sprints = Sprint.objects.filter(
@@ -41,7 +55,10 @@ class Sprint(models.Model):
                 overlapping_sprints = overlapping_sprints.exclude(pk=self.pk)
             
             if overlapping_sprints.exists():
-                raise ValidationError("Sprint dates overlap with an existing sprint")
+                raise ValidationError(
+                    "The sprint dates overlap with an existing sprint. "
+                    "Please choose different dates."
+                )
     
     def save(self, *args, **kwargs):
         self.clean()
@@ -63,4 +80,4 @@ class Sprint(models.Model):
     def is_past(self):
         """Check if the sprint is in the past"""
         today = timezone.now().date()
-        return self.end_date < today 
+        return self.end_date < today
