@@ -88,7 +88,7 @@ This application provides a complete solution for Scrum teams to manage their pr
 3. **Access the application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000/api
-   - API documentation: http://localhost:8000/api/swagger/
+   - API documentation: http://localhost:8000/api/docs/
 
 ### Manual Setup (without Docker)
 

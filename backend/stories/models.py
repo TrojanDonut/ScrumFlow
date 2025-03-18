@@ -25,7 +25,7 @@ class UserStory(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     acceptance_criteria = models.TextField()
-    priority = models.CharField(max_length=10, choices=Priority.choices, default=Priority.SHOULD_HAVE)
+    priority = models.CharField(max_length=100, choices=Priority.choices, default=Priority.SHOULD_HAVE)
     business_value = models.PositiveIntegerField(default=0)
     story_points = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.NOT_STARTED)

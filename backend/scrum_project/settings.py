@@ -39,11 +39,10 @@ INSTALLED_APPS = [
     
     # Local apps
     'users',
-    # Temporarily commented out for testing authentication
     'projects',
-    # 'sprints',
-    # 'stories',
-    # 'tasks',
+    'sprints',
+    'stories',
+    'tasks',
 ]
 
 MIDDLEWARE = [
