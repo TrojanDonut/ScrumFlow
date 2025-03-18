@@ -5,86 +5,34 @@ import { Alert, Spinner, Card, ListGroup, Button } from 'react-bootstrap';
 import { fetchProjectById } from '../store/slices/projectSlice';
 import { formatErrorMessage } from '../utils/errorUtils';
 import axios from "axios";
-import { createSprint } from "../store/slices/sprintSlice";
+import { createSprint, fetchSprints } from "../store/slices/sprintSlice";
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const { currentProject, loading, error } = useSelector(state => state.projects);
-  const { token } = useSelector(state => state.auth); // Get token from auth state
+  const { currentProject } = useSelector(state => state.projects);
+  const { sprints, error, loading } = useSelector(state => state.sprints);
 
-  const [sprints, setSprints] = useState([]);
   const [formData, setFormData] = useState({
     start_date: "",
     end_date: "",
     velocity: 0,
   });
-  const [errorSprint, setErrorSprint] = useState(null);
-  const [loadingSprint, setLoadingSprint] = useState(false);
 
   useEffect(() => {
     dispatch(fetchProjectById(id));
+    dispatch(fetchSprints(id));
   }, [dispatch, id]);
-
-  useEffect(() => {
-    const fetchSprints = async () => {
-      try {
-        const response = await axios.get(`http://localhost:8000/api/projects/${id}/sprints/`);
-        setSprints(response.data);
-      } catch (err) {
-        console.error("Error fetching sprints:", err);
-      }
-    };
-    fetchSprints();
-  }, [id]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoadingSprint(true);
-    setErrorSprint(null);
 
-    // Validate form data before submitting
-    const { start_date, end_date, velocity } = formData;
-    const today = new Date().toISOString().split("T")[0];
-    if (end_date < start_date) {
-      setErrorSprint("End date cannot be before start date.");
-      setLoadingSprint(false);
-      return;
-    }
-    if (start_date < today) {
-      setErrorSprint("Start date cannot be in the past.");
-      setLoadingSprint(false);
-      return;
-    }
-    if (velocity <= 0) {
-      setErrorSprint("Velocity must be a positive number.");
-      setLoadingSprint(false);
-      return;
-    }
-    // Check for overlapping sprints
-    const overlappingSprint = sprints.some(sprint => (
-      (start_date >= sprint.start_date && start_date <= sprint.end_date) ||
-      (end_date >= sprint.start_date && end_date <= sprint.end_date)
-    ));
-    if (overlappingSprint) {
-      setErrorSprint("The sprint dates overlap with an existing sprint.");
-      setLoadingSprint(false);
-      return;
-    }
-
-    try {
-      await dispatch(createSprint({ projectId: id, sprintData: formData })).unwrap();
-      setSprints([...sprints, formData]);
-      setFormData({ start_date: "", end_date: "", velocity: 0 });
-    } catch (err) {
-      setErrorSprint(`Error: ${err}`);
-    } finally {
-      setLoadingSprint(false);
-    }
+    dispatch(createSprint({ projectId: id, sprintData: formData }));
+    setFormData({ start_date: "", end_date: "", velocity: 0 });
   };
 
   const formatDate = (dateString) => {
@@ -102,9 +50,6 @@ const ProjectDetail = () => {
     );
   }
 
-  if (error) {
-    return <Alert variant="danger">{formatErrorMessage(error)}</Alert>;
-  }
 
   if (!currentProject) {
     return (
@@ -163,11 +108,11 @@ const ProjectDetail = () => {
               <label className="form-label">Velocity:</label>
               <input type="number" name="velocity" value={formData.velocity} onChange={handleChange} className="form-control" required />
             </div>
-            <Button type="submit" variant="primary" disabled={loadingSprint}>
-              {loadingSprint ? "Creating..." : "Create Sprint"}
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? "Creating..." : "Create Sprint"}
             </Button>
           </form>
-          {errorSprint && <Alert variant="danger" className="mt-3">{errorSprint.replace(/['"]+/g, '')}</Alert>}
+          {error && <Alert variant="danger" className="mt-3">{formatErrorMessage(error)}</Alert>}
         </Card.Body>
       </Card>
 
