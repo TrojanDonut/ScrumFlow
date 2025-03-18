@@ -1,18 +1,44 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Alert, Spinner, Card, ListGroup, Button } from 'react-bootstrap';
 import { fetchProjectById } from '../store/slices/projectSlice';
 import { formatErrorMessage } from '../utils/errorUtils';
+import axios from "axios";
+import { createSprint, fetchSprints } from "../store/slices/sprintSlice";
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const { currentProject, loading, error } = useSelector(state => state.projects);
+  const { currentProject } = useSelector(state => state.projects);
+  const { sprints, error, loading } = useSelector(state => state.sprints);
+
+  const [formData, setFormData] = useState({
+    start_date: "",
+    end_date: "",
+    velocity: 0,
+  });
 
   useEffect(() => {
     dispatch(fetchProjectById(id));
+    dispatch(fetchSprints(id));
   }, [dispatch, id]);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    dispatch(createSprint({ projectId: id, sprintData: formData }));
+    setFormData({ start_date: "", end_date: "", velocity: 0 });
+  };
+
+  const formatDate = (dateString) => {
+    const options = { day: '2-digit', month: 'long', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-GB', options);
+  };
 
   if (loading) {
     return (
@@ -24,9 +50,6 @@ const ProjectDetail = () => {
     );
   }
 
-  if (error) {
-    return <Alert variant="danger">{formatErrorMessage(error)}</Alert>;
-  }
 
   if (!currentProject) {
     return (
@@ -61,15 +84,54 @@ const ProjectDetail = () => {
                     <div>
                       <strong>{member.user.username}</strong> ({member.role})
                     </div>
-                    <div>
-                      {member.user.email}
-                    </div>
+                    <div>{member.user.email}</div>
                   </div>
                 </ListGroup.Item>
               ))}
             </ListGroup>
           ) : (
             <p>No team members assigned to this project.</p>
+          )}
+        </Card.Body>
+      </Card>
+
+      <Card className="mt-4">
+        <Card.Body>
+          <Card.Title>Create a New Sprint</Card.Title>
+          <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+              <label className="form-label">Start Date:</label>
+              <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="form-control" required />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">End Date:</label>
+              <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="form-control" required />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Velocity:</label>
+              <input type="number" name="velocity" value={formData.velocity} onChange={handleChange} className="form-control" required />
+            </div>
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? "Creating..." : "Create Sprint"}
+            </Button>
+          </form>
+          {error && <Alert variant="danger" className="mt-3">{formatErrorMessage(error)}</Alert>}
+        </Card.Body>
+      </Card>
+
+      <Card className="mt-4">
+        <Card.Body>
+          <Card.Title>Existing Sprints</Card.Title>
+          {sprints.length > 0 ? (
+            <ListGroup>
+              {sprints.map((sprint) => (
+                <ListGroup.Item key={sprint.id}>
+                  Sprint from {formatDate(sprint.start_date)} to {formatDate(sprint.end_date)} (Velocity: {sprint.velocity})
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          ) : (
+            <p>No sprints available.</p>
           )}
         </Card.Body>
       </Card>
