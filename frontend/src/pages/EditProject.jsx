@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Form, Button, Spinner, Alert, Card, ListGroup, Modal } from 'react-bootstrap';
 import { fetchProjectById, updateProject, fetchAllUsers, clearProjectError, removeMemberFromProject, addMemberToProject } from '../store/slices/projectSlice';
@@ -14,6 +14,7 @@ const EditProject = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState('');
   const [role, setRole] = useState('DEVELOPER');
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(fetchProjectById(id));
@@ -36,6 +37,7 @@ const EditProject = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     dispatch(updateProject({ id, projectData: formData }));
+    navigate(`/projects/${id}`);
   };
 
   const handleCloseModal = () => {
@@ -58,30 +60,30 @@ const EditProject = () => {
     return <Alert variant="danger">{formatErrorMessage(error)}</Alert>;
   }
 
-  return (
-    <div>
-      <h1>Edit Project</h1>
-      <Form onSubmit={handleSubmit}>
-        <Form.Group controlId="formProjectName">
-          <Form.Label>Project Name</Form.Label>
-          <Form.Control
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
-        <Form.Group controlId="formProjectDescription">
-          <Form.Label>Project Description</Form.Label>
-          <Form.Control
-            as="textarea"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+return (
+  <div>
+    <h1>Edit Project</h1>
+    <Form onSubmit={handleSubmit}>
+      <Form.Group controlId="formProjectName" className="mb-4">
+        <Form.Label>Project Name</Form.Label>
+        <Form.Control
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+        />
+      </Form.Group>
+      <Form.Group controlId="formProjectDescription" className="mb-4">
+        <Form.Label>Project Description</Form.Label>
+        <Form.Control
+          as="textarea"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          required
+        />
+      </Form.Group>
 
       {error && (
         <Alert variant="danger" onClose={() => dispatch(clearProjectError())} dismissible>
