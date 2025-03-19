@@ -3,7 +3,7 @@ import { Navbar, Nav, Container, Button, NavDropdown } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
-import { FaUserCog, FaLock, FaShieldAlt, FaUser } from 'react-icons/fa';
+import { FaUserCog, FaLock, FaShieldAlt, FaUser, FaInfoCircle } from 'react-icons/fa';
 
 const Header = () => {
   const { isAuthenticated, user } = useSelector(state => state.auth);
@@ -29,6 +29,10 @@ const Header = () => {
                 {user?.role === 'SYSTEM_ADMIN' && (
                   <Nav.Link as={Link} to="/users">User Management</Nav.Link>
                 )}
+                <Nav.Link as={Link} to="/instructions">
+                  <FaInfoCircle className="me-1" />
+                  Instructions
+                </Nav.Link>
               </>
             )}
           </Nav>

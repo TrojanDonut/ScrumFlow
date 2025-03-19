@@ -13,6 +13,7 @@ import EditProjectMembers from './pages/EditProjectMembers';
 import ChangePassword from './pages/ChangePassword';
 import TwoFactorSetup from './pages/TwoFactorSetup';
 import UserProfile from './pages/UserProfile';
+import Instructions from './pages/Instructions';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCurrentUser } from './store/slices/authSlice';
 import EditProject from './pages/EditProject';
@@ -92,6 +93,12 @@ function App() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <UserProfile />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/instructions" element={
+            <ProtectedRoute>
+              <Instructions />
             </ProtectedRoute>
           } />
           

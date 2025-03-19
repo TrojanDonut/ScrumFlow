@@ -36,6 +36,9 @@ const Dashboard = () => {
                   Manage Users
                 </ListGroup.Item>
               )}
+              <ListGroup.Item action as={Link} to="/instructions">
+                User Instructions
+              </ListGroup.Item>
             </ListGroup>
           </Card>
         </Col>
