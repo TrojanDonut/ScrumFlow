@@ -91,12 +91,12 @@ return (
         </Alert>
       )}
       <AssignedUsersList projectId={id} />
-      <Button variant="primary" type="submit">
-        Save Changes
-      </Button>
+        <Button variant="primary" type="submit">
+          Save Changes
+        </Button>
     </Form>
-  </div>
-);
+    </div>
+  );
 };
 
 export default EditProject;

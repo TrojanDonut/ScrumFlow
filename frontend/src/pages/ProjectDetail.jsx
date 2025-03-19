@@ -61,12 +61,18 @@ const ProjectDetail = () => {
 
   return (
     <div>
-      <h1>Project Detail: {currentProject.name}</h1>
-      <p>{currentProject.description}</p>
-      <div className="mt-3">
-        <strong>Created:</strong> {new Date(currentProject.created_at).toLocaleDateString()}
+      <div className="d-flex justify-content-between align-items-center">
+        <div>
+          <h1>Project Detail: {currentProject.name}</h1>
+          <p>{currentProject.description}</p>
+          <div className="mt-3">
+            <strong>Created:</strong> {new Date(currentProject.created_at).toLocaleDateString()}
+          </div>
+        </div>
+        <Button variant="outline-primary" as={Link} to={`/projects/${id}/edit`}>
+          Edit Project
+        </Button>
       </div>
-
       <Card className="mt-4">
         <Card.Body>
           <Card.Title>Team Members</Card.Title>
@@ -86,9 +92,6 @@ const ProjectDetail = () => {
           ) : (
             <p>No team members assigned to this project.</p>
           )}
-          <Button variant="outline-primary" className="mt-3" as={Link} to={`/projects/${id}/members`}>
-            Manage Team Members
-          </Button>
         </Card.Body>
       </Card>
 

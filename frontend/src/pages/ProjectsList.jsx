@@ -85,6 +85,7 @@ const ProjectsList = () => {
                   >
                     View
                   </Button>
+                  {user?.role === 'SYSTEM_ADMIN' && (
                   <Button 
                     variant="outline-danger" 
                     size="sm" 
@@ -92,7 +93,7 @@ const ProjectsList = () => {
                     className="ms-2"
                   >
                     Delete
-                  </Button>
+                  </Button>)}
                 </td>
               </tr>
             ))}
