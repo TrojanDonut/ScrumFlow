@@ -15,6 +15,7 @@ import TwoFactorSetup from './pages/TwoFactorSetup';
 import UserProfile from './pages/UserProfile';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCurrentUser } from './store/slices/authSlice';
+import EditProject from './pages/EditProject';
 
 function App() {
   const { isAuthenticated } = useSelector(state => state.auth);
@@ -61,6 +62,12 @@ function App() {
           <Route path="/projects/:id/members" element={
             <ProtectedRoute>
               <EditProjectMembers />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/:id/edit" element={
+            <ProtectedRoute adminOnly>
+              <EditProject />
             </ProtectedRoute>
           } />
           
