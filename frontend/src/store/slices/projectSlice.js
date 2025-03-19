@@ -199,6 +199,30 @@ export const deleteProject = createAsyncThunk(
   }
 );
 
+export const updateProjectMemberRole = createAsyncThunk(
+  'projects/updateProjectMemberRole',
+  async ({projectId, userId, role}, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.put(`${API_URL}/projects/${projectId}/members/${userId}/`, { user: userId, role: role }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response ? error.response.data : error.message);
+    }
+  }
+);
+
 
 const initialState = {
   projects: [],
@@ -312,6 +336,23 @@ const projectSlice = createSlice({
       .addCase(updateProject.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to update project';
+      })
+      .addCase(updateProjectMemberRole.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      }
+      )
+      .addCase(updateProjectMemberRole.fulfilled, (state, action) => {
+        state.loading = false;
+        console.log(action.payload);
+        const index = state.currentProject.members.findIndex(member => member.id === action.payload.id);
+        if (index !== -1) {
+          state.currentProject.members[index] = action.payload;
+        }
+      })
+      .addCase(updateProjectMemberRole.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update member role';
       });
   },
 });
