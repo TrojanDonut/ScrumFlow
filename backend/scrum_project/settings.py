@@ -11,12 +11,16 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key-change-in-production')
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY', 'django-insecure-default-key-change-in-production'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = int(os.environ.get('DEBUG', 0))
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost 127.0.0.1').split(' ')
+ALLOWED_HOSTS = os.environ.get(
+    'ALLOWED_HOSTS', 'localhost 127.0.0.1'
+).split(' ')
 
 # Application definition
 INSTALLED_APPS = [
@@ -26,7 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
@@ -36,7 +40,7 @@ INSTALLED_APPS = [
     'django_otp',
     'django_otp.plugins.otp_totp',
     'django_otp.plugins.otp_static',
-    
+
     # Local apps
     'users',
     'projects',
@@ -88,19 +92,28 @@ DATABASES = {
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.'
+            'UserAttributeSimilarityValidator'
+        ),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.MinimumLengthValidator'
+        ),
         'OPTIONS': {
             'min_length': 12,
         }
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.CommonPasswordValidator'
+        ),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.NumericPasswordValidator'
+        ),
     },
 ]
 
@@ -161,4 +174,4 @@ WAIT_FOR_DB_TIMEOUT = int(os.environ.get('WAIT_FOR_DB_TIMEOUT', 20))
 TESTING = 'test' in sys.argv
 
 # Two-factor authentication settings
-OTP_TOTP_ISSUER = 'ScrumFlow' 
+OTP_TOTP_ISSUER = 'ScrumFlow'
