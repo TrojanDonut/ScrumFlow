@@ -18,6 +18,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchCurrentUser } from './store/slices/authSlice';
 import EditProject from './pages/EditProject';
 import UserStories from './pages/UserStories';
+import AddUserStory from './pages/AddUserStory';
+import StoryInfo from './pages/StoryInfo';
 
 function App() {
   const { isAuthenticated } = useSelector(state => state.auth);
@@ -106,6 +108,18 @@ function App() {
           <Route path="/projects/:projectId/sprints/:sprintId/user-stories" element={
             <ProtectedRoute>
               <UserStories />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/:projectId/sprints/:sprintId/user-stories/add" element={
+            <ProtectedRoute>
+              <AddUserStory />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/:projectId/sprints/:sprintId/user-stories/:storyId" element={
+            <ProtectedRoute>
+              <StoryInfo />
             </ProtectedRoute>
           } />
 

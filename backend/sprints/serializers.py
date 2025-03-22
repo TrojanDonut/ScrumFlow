@@ -37,6 +37,10 @@ class SprintSerializer(serializers.ModelSerializer):
         if data['velocity'] <= 0:
             raise serializers.ValidationError("Velocity must be greater than 0.")
 
+        # Check that velocity is under 100
+        if data['velocity'] > 100:
+            raise serializers.ValidationError("Velocity must be less than or equal to 100.")
+
         # Check if start_date or end_date falls on a weekend
         if data['start_date'].weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
             raise serializers.ValidationError("Start date cannot be on a weekend.")

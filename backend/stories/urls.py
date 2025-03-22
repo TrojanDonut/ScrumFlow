@@ -1,7 +1,12 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
+from rest_framework.routers import DefaultRouter
+from .views import UserStoryViewSet
 
 app_name = 'stories'
+
+router = DefaultRouter()
+router.register(r'user-stories', UserStoryViewSet, basename='user-story')
 
 urlpatterns = [
     path('projects/<int:project_id>/stories/', views.UserStoryListCreateView.as_view(), name='story-list-create'),
@@ -11,4 +16,5 @@ urlpatterns = [
     path('projects/<int:project_id>/backlog/', views.ProductBacklogView.as_view(), name='product-backlog'),
     path('projects/<int:project_id>/stories/<int:story_id>/estimate/', views.StoryEstimateView.as_view(), name='story-estimate'),
     path('projects/<int:project_id>/stories/<int:story_id>/planning-poker/', views.PlanningPokerView.as_view(), name='planning-poker'),
-] 
+    path('projects/<int:project_id>/sprints/<int:sprint_id>/', include(router.urls)),
+]

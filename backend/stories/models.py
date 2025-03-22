@@ -21,25 +21,36 @@ class UserStory(models.Model):
         REJECTED = 'REJECTED', 'Rejected'
     
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='stories')
-    sprint = models.ForeignKey(Sprint, on_delete=models.SET_NULL, null=True, blank=True, related_name='stories')
-    title = models.CharField(max_length=255)
-    description = models.TextField()
-    acceptance_criteria = models.TextField()
-    priority = models.CharField(max_length=100, choices=Priority.choices, default=Priority.SHOULD_HAVE)
-    business_value = models.PositiveIntegerField(default=0)
+    sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE, related_name='user_stories')
+    name = models.CharField(max_length=255)
+    text = models.TextField()
+    acceptance_tests = models.TextField()
+    priority = models.CharField(max_length=50, choices=[
+        ('must have', 'Must Have'),
+        ('should have', 'Should Have'),
+        ('could have', 'Could Have'),
+        ("won't have this time", "Won't Have This Time"),
+    ])
+    business_value = models.PositiveIntegerField()
     story_points = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.NOT_STARTED)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='created_stories')
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='created_stories', 
+        null=True,  # Allow null temporarily
+        blank=True  # Allow blank temporarily
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         ordering = ['-priority', '-business_value']
-        unique_together = ['project', 'title']
+        unique_together = ['project', 'name']
         verbose_name_plural = 'User stories'
     
     def __str__(self):
-        return f"{self.title} ({self.get_priority_display()})"
+        return self.name
     
     @property
     def is_estimated(self):
@@ -69,4 +80,4 @@ class UserStoryComment(models.Model):
         ordering = ['created_at']
     
     def __str__(self):
-        return f"Comment by {self.author.username} on {self.story.title}" 
+        return f"Comment by {self.author.username} on {self.story.name}"
