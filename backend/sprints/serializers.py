@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Sprint
 from django.utils import timezone
+from datetime import datetime
 
 
 class SprintSerializer(serializers.ModelSerializer):
@@ -33,10 +34,13 @@ class SprintSerializer(serializers.ModelSerializer):
             )
 
         # Check that velocity is positive
-        if velocity < 0:
-            raise serializers.ValidationError(
-                "Velocity must be a positive number. "
-                "Please enter a valid velocity."
-            )
+        if data['velocity'] <= 0:
+            raise serializers.ValidationError("Velocity must be greater than 0.")
+
+        # Check if start_date or end_date falls on a weekend
+        if data['start_date'].weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
+            raise serializers.ValidationError("Start date cannot be on a weekend.")
+        if data['end_date'].weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
+            raise serializers.ValidationError("End date cannot be on a weekend.")
 
         return data
