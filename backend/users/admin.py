@@ -8,12 +8,12 @@ User = get_user_model()
 
 class UserAdmin(BaseUserAdmin):
     """Custom admin view for User model"""
-    list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'is_staff')
-    list_filter = ('role', 'is_staff', 'is_active')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'user_type', 'is_staff')
+    list_filter = ('user_type', 'is_staff', 'is_active')
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
-        (_('Scrum role'), {'fields': ('role',)}),
+        (_('User type'), {'fields': ('user_type',)}),
         (_('Permissions'), {
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
         }),
@@ -21,4 +21,4 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
-admin.site.register(User, UserAdmin) 
+admin.site.register(User, UserAdmin)

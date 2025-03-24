@@ -26,7 +26,7 @@ const Header = () => {
               <>
                 <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
                 <Nav.Link as={Link} to="/projects">Projects</Nav.Link>
-                {user?.role === 'SYSTEM_ADMIN' && (
+                {user?.user_type === 'ADMIN' && (
                   <Nav.Link as={Link} to="/users">User Management</Nav.Link>
                 )}
                 <Nav.Link as={Link} to="/instructions">

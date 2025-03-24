@@ -12,6 +12,7 @@ const ProjectDetail = () => {
   const dispatch = useDispatch();
   const { currentProject } = useSelector(state => state.projects);
   const { sprints, error, loading } = useSelector(state => state.sprints);
+  const { user } = useSelector(state => state.auth);
 
   const [formData, setFormData] = useState({
     start_date: "",
@@ -69,9 +70,10 @@ const ProjectDetail = () => {
             <strong>Created:</strong> {new Date(currentProject.created_at).toLocaleDateString()}
           </div>
         </div>
+        {user?.user_type === 'ADMIN' && (
         <Button variant="outline-primary" as={Link} to={`/projects/${id}/edit`}>
           Edit Project
-        </Button>
+        </Button>)}
       </div>
       <Card className="mt-4">
         <Card.Body>
