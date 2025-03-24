@@ -79,7 +79,7 @@ const Instructions = () => {
           </Accordion.Body>
         </Accordion.Item>
 
-        {user?.role === 'SYSTEM_ADMIN' && (
+        {user?.user_type === 'ADMIN' && (
           <Accordion.Item eventKey="4">
             <Accordion.Header>User Management (Admin Only)</Accordion.Header>
             <Accordion.Body>

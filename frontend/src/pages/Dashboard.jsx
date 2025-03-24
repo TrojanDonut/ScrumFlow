@@ -31,7 +31,7 @@ const Dashboard = () => {
               <ListGroup.Item action as={Link} to="/projects">
                 View All Projects
               </ListGroup.Item>
-              {user?.role === 'SYSTEM_ADMIN' && (
+              {user?.user_type === 'ADMIN' && (
                 <ListGroup.Item action as={Link} to="/users">
                   Manage Users
                 </ListGroup.Item>
