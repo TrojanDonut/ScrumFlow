@@ -111,12 +111,12 @@ class Command(BaseCommand):
                 created_by_user = User.objects.get(username='product_owner')
 
                 if not UserStory.objects.filter(
-                    title='Initial User Story'
+                    name='Initial User Story'
                 ).exists():
                     user_story = UserStory.objects.create(
                         project=project,
                         sprint=None,
-                        title='Initial User Story',
+                        name='Initial User Story',
                         description=(
                             'This is an initial user story for testing.'
                         ),
@@ -131,7 +131,7 @@ class Command(BaseCommand):
                     )
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f'User story created: {user_story.title}'
+                            f'User story created: {user_story.name}'
                         )
                     )
                 else:
@@ -147,7 +147,7 @@ class Command(BaseCommand):
 
             # Create initial tasks
             try:
-                user_story = UserStory.objects.get(title='Initial User Story')
+                user_story = UserStory.objects.get(name='Initial User Story')
                 tasks = [
                     {
                         'title': 'Initial Task 1',
