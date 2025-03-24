@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
-import re
 import pyotp
 import qrcode
 import qrcode.image.svg
@@ -26,6 +25,14 @@ class UserSerializer(serializers.ModelSerializer):
                   'password', 'password_confirm', 'user_type', 'last_login',
                   'last_login_timestamp', 'last_login_ip']
         read_only_fields = ['last_login', 'last_login_timestamp', 'last_login_ip']
+
+    def validate_username(self, value):
+        """
+        Check that the username is not already taken (case-insensitive)
+        """
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError(_("This username is already taken. Please choose a different username."))
+        return value
 
     def validate_password(self, value):
         """
@@ -108,7 +115,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         Check that the username is not already taken
         """
         user = self.context['request'].user
-        if User.objects.exclude(pk=user.pk).filter(username=value).exists():
+        if User.objects.exclude(pk=user.pk).filter(username__iexact=value).exists():
             raise serializers.ValidationError(_("This username is already taken."))
         return value
 

@@ -38,6 +38,21 @@ class UserAuthenticationTests(TestCase):
         self.assertEqual(response.data['user']['first_name'], self.user_data['first_name'])
         self.assertEqual(response.data['user']['last_name'], self.user_data['last_name'])
         self.assertEqual(response.data['user']['role'], self.user_data['role'])
+        
+    def test_user_registration_case_insensitive_username(self):
+        """Test that username validation during registration is case-insensitive"""
+        # First create a user
+        self.client.post(self.register_url, self.user_data, format='json')
+        
+        # Try to create another user with the same username but different case
+        new_user_data = self.user_data.copy()
+        new_user_data['username'] = self.user_data['username'].upper()
+        new_user_data['email'] = 'different@example.com'  # Need a different email
+        
+        response = self.client.post(self.register_url, new_user_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('username', response.data)
+        self.assertIn('already taken', str(response.data['username']))
 
     def test_user_login(self):
         """Test user login"""
@@ -143,7 +158,29 @@ class UserProfileUpdateTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('username', response.data)
+        
+    def test_update_profile_case_insensitive_username(self):
+        """Test that username validation is case-insensitive"""
+        # Create another user with a different username
+        User.objects.create_user(
+            username='ExistingUser',  # Note the capitalization
+            email='existing@example.com',
+            password='testpassword123'
+        )
 
+        # Try to update with the same username but different case
+        payload = {
+            'username': 'existinguser',  # lowercase version
+            'email': 'newtest@example.com',
+            'first_name': 'New',
+            'last_name': 'Name'
+        }
+
+        response = self.client.put(self.url, payload)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('username', response.data)
+        
     def test_update_profile_duplicate_email(self):
         """Test updating user profile with a duplicate email"""
         # Create another user with a different email
