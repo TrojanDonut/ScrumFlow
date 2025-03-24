@@ -12,6 +12,7 @@ from .serializers import (
     TwoFactorVerifySerializer,
     UserProfileUpdateSerializer
 )
+from .permissions import IsAdminUserType
 
 User = get_user_model()
 
@@ -28,8 +29,18 @@ class UserListCreateView(generics.ListCreateAPIView):
         Only system administrators can list or create users
         """
         if self.request.method == 'POST':
-            return [permissions.IsAuthenticated(), permissions.IsAdminUser()]
-        return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsAdminUserType()]
+        return [permissions.IsAuthenticated(), IsAdminUserType()]
+    
+    def get_queryset(self):
+        """
+        Optionally filter the queryset to return only non-admin users.
+        """
+        queryset = super().get_queryset()
+        show_all = self.request.query_params.get('show_all', 'false').lower() == 'true'
+        if not show_all:
+            queryset = queryset.filter(user_type=User.UserType.USER)
+        return queryset
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):

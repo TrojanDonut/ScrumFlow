@@ -24,20 +24,20 @@ const UserManagement = () => {
     password_confirm: '',
     first_name: '',
     last_name: '',
-    role: 'DEVELOPER'
+    user_type: 'USER'
   });
   const [editUser, setEditUser] = useState({
     username: '',
     email: '',
     first_name: '',
     last_name: '',
-    role: '',
+    user_type: '',
     is_active: true
   });
   const [successMessage, setSuccessMessage] = useState('');
 
   // Check if current user is a system admin
-  const isSystemAdmin = currentUser && currentUser.role === 'SYSTEM_ADMIN';
+  const isSystemAdmin = currentUser && currentUser.user_type === 'ADMIN';
 
   useEffect(() => {
     dispatch(fetchUsers());
@@ -137,7 +137,7 @@ const UserManagement = () => {
           password_confirm: '',
           first_name: '',
           last_name: '',
-          role: 'DEVELOPER'
+          user_type: 'USER'
         });
         setPasswordStrength(0);
         setPasswordFeedback('');
@@ -183,7 +183,7 @@ const UserManagement = () => {
           email: '',
           first_name: '',
           last_name: '',
-          role: '',
+          user_type: '',
           is_active: true
         });
         
@@ -230,7 +230,7 @@ const UserManagement = () => {
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
-      role: user.role,
+      user_type: user.user_type,
       is_active: user.is_active
     });
     setShowEditModal(true);
@@ -297,7 +297,7 @@ const UserManagement = () => {
                 <td>{user.username}</td>
                 <td>{user.email}</td>
                 <td>{`${user.first_name} ${user.last_name}`}</td>
-                <td>{user.role}</td>
+                <td>{user.user_type}</td>
                 <td>{user.is_active ? 'Active' : 'Inactive'}</td>
                 {isSystemAdmin && (
                   <td>
@@ -380,15 +380,13 @@ const UserManagement = () => {
               <Form.Group className="mb-3">
                 <Form.Label>Role</Form.Label>
                 <Form.Select
-                  name="role"
-                  value={newUser.role}
+                  name="user_type"
+                  value={newUser.user_type}
                   onChange={handleInputChange}
                   required
                 >
-                  <option value="SYSTEM_ADMIN">System Administrator</option>
-                  <option value="PRODUCT_OWNER">Product Owner</option>
-                  <option value="SCRUM_MASTER">Scrum Master</option>
-                  <option value="DEVELOPER">Developer</option>
+                  <option value="ADMIN">System Administrator</option>
+                  <option value="USER">User</option>
                 </Form.Select>
               </Form.Group>
 
@@ -531,15 +529,13 @@ const UserManagement = () => {
               <Form.Group className="mb-3">
                 <Form.Label>Role</Form.Label>
                 <Form.Select
-                  name="role"
-                  value={editUser.role}
+                  name="user_type"
+                  value={editUser.user_type}
                   onChange={handleEditInputChange}
                   required
                 >
-                  <option value="SYSTEM_ADMIN">System Administrator</option>
-                  <option value="PRODUCT_OWNER">Product Owner</option>
-                  <option value="SCRUM_MASTER">Scrum Master</option>
-                  <option value="DEVELOPER">Developer</option>
+                  <option value="ADMIN">System Administrator</option>
+                  <option value="USER">User</option>
                 </Form.Select>
               </Form.Group>
 
