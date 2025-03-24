@@ -4,8 +4,8 @@ from rest_framework.views import APIView
 from django.contrib.auth import get_user_model, login, logout
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (
-    UserSerializer, 
-    UserDetailSerializer, 
+    UserSerializer,
+    UserDetailSerializer,
     LoginSerializer,
     ChangePasswordSerializer,
     TwoFactorSetupSerializer,
@@ -23,7 +23,7 @@ class UserListCreateView(generics.ListCreateAPIView):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    
+
     def get_permissions(self):
         """
         Only system administrators can list or create users
@@ -31,7 +31,7 @@ class UserListCreateView(generics.ListCreateAPIView):
         if self.request.method == 'POST':
             return [permissions.IsAuthenticated(), IsAdminUserType()]
         return [permissions.IsAuthenticated(), IsAdminUserType()]
-    
+
     def get_queryset(self):
         """
         Optionally filter the queryset to return only non-admin users.
@@ -49,7 +49,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     queryset = User.objects.all()
     serializer_class = UserDetailSerializer
-    
+
     def get_permissions(self):
         """
         Users can view their own information.
@@ -58,7 +58,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in ['PUT', 'PATCH', 'DELETE']:
             return [permissions.IsAuthenticated(), permissions.IsAdminUser()]
         return [permissions.IsAuthenticated()]
-    
+
     def get_object(self):
         """
         Regular users can only retrieve their own information.
@@ -75,7 +75,7 @@ class CurrentUserView(APIView):
     Get the current authenticated user
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get(self, request):
         serializer = UserDetailSerializer(request.user)
         return Response(serializer.data)
@@ -86,10 +86,10 @@ class UserProfileUpdateView(APIView):
     Update the current user's profile information
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def put(self, request):
         serializer = UserProfileUpdateSerializer(
-            request.user, 
+            request.user,
             data=request.data,
             context={'request': request}
         )
@@ -97,7 +97,7 @@ class UserProfileUpdateView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
     def patch(self, request):
         """Handle partial updates to user profile"""
         serializer = UserProfileUpdateSerializer(
@@ -117,26 +117,26 @@ class LoginView(APIView):
     Login view for user authentication
     """
     permission_classes = [permissions.AllowAny]
-    
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
-        
+
         # Record login information
         ip_address = self.get_client_ip(request)
         user.record_login(ip_address)
-        
+
         login(request, user)
-        
+
         refresh = RefreshToken.for_user(user)
-        
+
         return Response({
             'refresh': str(refresh),
             'access': str(refresh.access_token),
             'user': UserDetailSerializer(user).data
         })
-    
+
     def get_client_ip(self, request):
         """Get client IP address from request"""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -152,7 +152,7 @@ class LogoutView(APIView):
     Logout view for user authentication
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def post(self, request):
         try:
             refresh_token = request.data.get('refresh')
@@ -170,7 +170,7 @@ class RegisterView(APIView):
     Register a new user
     """
     permission_classes = [permissions.AllowAny]
-    
+
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
@@ -189,32 +189,32 @@ class ChangePasswordView(APIView):
     Change user password
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             user = request.user
-            
+
             # Check old password
             if not user.check_password(serializer.validated_data['old_password']):
                 return Response(
-                    {"old_password": ["Wrong password."]}, 
+                    {"old_password": ["Wrong password."]},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Set new password
             user.set_password(serializer.validated_data['new_password'])
             user.save()
-            
+
             # Update token
             refresh = RefreshToken.for_user(user)
-            
+
             return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'detail': 'Password updated successfully.'
             }, status=status.HTTP_200_OK)
-            
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -223,7 +223,7 @@ class TwoFactorSetupView(APIView):
     Setup two-factor authentication
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def post(self, request):
         serializer = TwoFactorSetupSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
@@ -240,7 +240,7 @@ class TwoFactorVerifyView(APIView):
     Verify and enable two-factor authentication
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def post(self, request):
         serializer = TwoFactorVerifySerializer(data=request.data)
         if serializer.is_valid():
@@ -248,7 +248,7 @@ class TwoFactorVerifyView(APIView):
             user.two_factor_secret = serializer.validated_data['secret_key']
             user.two_factor_enabled = True
             user.save()
-            
+
             return Response({
                 'detail': 'Two-factor authentication enabled successfully.'
             }, status=status.HTTP_200_OK)
@@ -260,28 +260,28 @@ class TwoFactorDisableView(APIView):
     Disable two-factor authentication
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def post(self, request):
         password = request.data.get('password')
-        
+
         if not password:
             return Response(
-                {"password": ["Password is required."]}, 
+                {"password": ["Password is required."]},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         user = request.user
-        
+
         if not user.check_password(password):
             return Response(
-                {"password": ["Wrong password."]}, 
+                {"password": ["Wrong password."]},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         user.two_factor_enabled = False
         user.two_factor_secret = None
         user.save()
-        
+
         return Response({
             'detail': 'Two-factor authentication disabled successfully.'
-        }, status=status.HTTP_200_OK) 
+        }, status=status.HTTP_200_OK)

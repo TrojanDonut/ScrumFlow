@@ -13,4 +13,4 @@ urlpatterns = [
     path('projects/<int:project_id>/wall/<int:post_id>/comments/', views.ProjectWallCommentListCreateView.as_view(), name='project-wall-comment-list-create'),
     path('projects/<int:project_id>/documents/', views.ProjectDocumentListCreateView.as_view(), name='project-document-list-create'),
     path('projects/<int:project_id>/documents/<int:pk>/', views.ProjectDocumentDetailView.as_view(), name='project-document-detail'),
-] 
+]

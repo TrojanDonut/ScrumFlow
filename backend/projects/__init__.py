@@ -1,1 +1,1 @@
-# Projects app initialization 
+# Projects app initialization

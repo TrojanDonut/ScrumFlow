@@ -10,7 +10,7 @@ User = get_user_model()
 
 class UserAuthenticationTests(TestCase):
     """Test user authentication functionality"""
-    
+
     def setUp(self):
         self.client = APIClient()
         self.register_url = reverse('users:register')
@@ -25,7 +25,7 @@ class UserAuthenticationTests(TestCase):
             'last_name': 'User',
             'role': User.Role.DEVELOPER
         }
-    
+
     def test_user_registration(self):
         """Test user registration"""
         response = self.client.post(self.register_url, self.user_data, format='json')
@@ -38,7 +38,7 @@ class UserAuthenticationTests(TestCase):
         self.assertEqual(response.data['user']['first_name'], self.user_data['first_name'])
         self.assertEqual(response.data['user']['last_name'], self.user_data['last_name'])
         self.assertEqual(response.data['user']['role'], self.user_data['role'])
-    
+
     def test_user_login(self):
         """Test user login"""
         # Create a user
@@ -50,7 +50,7 @@ class UserAuthenticationTests(TestCase):
             last_name=self.user_data['last_name'],
             role=self.user_data['role']
         )
-        
+
         # Login
         login_data = {
             'username': self.user_data['username'],
@@ -62,7 +62,7 @@ class UserAuthenticationTests(TestCase):
         self.assertTrue('refresh' in response.data)
         self.assertTrue('user' in response.data)
         self.assertEqual(response.data['user']['username'], self.user_data['username'])
-    
+
     def test_user_logout(self):
         """Test user logout"""
         # Create a user
@@ -74,7 +74,7 @@ class UserAuthenticationTests(TestCase):
             last_name=self.user_data['last_name'],
             role=self.user_data['role']
         )
-        
+
         # Login
         login_data = {
             'username': self.user_data['username'],
@@ -82,7 +82,7 @@ class UserAuthenticationTests(TestCase):
         }
         login_response = self.client.post(self.login_url, login_data, format='json')
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
-        
+
         # Logout
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
         logout_data = {'refresh': login_response.data['refresh']}
@@ -92,7 +92,7 @@ class UserAuthenticationTests(TestCase):
 
 class UserProfileUpdateTests(TestCase):
     """Test the user profile update API"""
-    
+
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(
@@ -104,7 +104,7 @@ class UserProfileUpdateTests(TestCase):
         )
         self.client.force_authenticate(user=self.user)
         self.url = reverse('users:profile-update')
-        
+
     def test_update_profile_success(self):
         """Test updating user profile with valid data"""
         payload = {
@@ -113,16 +113,16 @@ class UserProfileUpdateTests(TestCase):
             'first_name': 'New',
             'last_name': 'Name'
         }
-        
+
         response = self.client.put(self.url, payload)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
         self.assertEqual(self.user.username, payload['username'])
         self.assertEqual(self.user.email, payload['email'])
         self.assertEqual(self.user.first_name, payload['first_name'])
         self.assertEqual(self.user.last_name, payload['last_name'])
-        
+
     def test_update_profile_duplicate_username(self):
         """Test updating user profile with a duplicate username"""
         # Create another user with a different username
@@ -131,19 +131,19 @@ class UserProfileUpdateTests(TestCase):
             email='existing@example.com',
             password='testpassword123'
         )
-        
+
         payload = {
             'username': 'existinguser',
             'email': 'newtest@example.com',
             'first_name': 'New',
             'last_name': 'Name'
         }
-        
+
         response = self.client.put(self.url, payload)
-        
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('username', response.data)
-        
+
     def test_update_profile_duplicate_email(self):
         """Test updating user profile with a duplicate email"""
         # Create another user with a different email
@@ -152,28 +152,28 @@ class UserProfileUpdateTests(TestCase):
             email='existing@example.com',
             password='testpassword123'
         )
-        
+
         payload = {
             'username': 'newtestuser',
             'email': 'existing@example.com',
             'first_name': 'New',
             'last_name': 'Name'
         }
-        
+
         response = self.client.put(self.url, payload)
-        
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('email', response.data)
-        
+
     def test_update_profile_partial(self):
         """Test updating only some fields of the user profile"""
         payload = {
             'first_name': 'NewFirstName',
             'last_name': 'NewLastName'
         }
-        
+
         response = self.client.patch(self.url, payload)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
         self.assertEqual(self.user.first_name, payload['first_name'])
@@ -181,16 +181,16 @@ class UserProfileUpdateTests(TestCase):
         # Username and email should remain unchanged
         self.assertEqual(self.user.username, 'testuser')
         self.assertEqual(self.user.email, 'test@example.com')
-        
+
     def test_update_profile_unauthenticated(self):
         """Test that unauthenticated users cannot update profiles"""
         self.client.force_authenticate(user=None)
-        
+
         payload = {
             'username': 'newtestuser',
             'email': 'newtest@example.com'
         }
-        
+
         response = self.client.put(self.url, payload)
-        
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED) 
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

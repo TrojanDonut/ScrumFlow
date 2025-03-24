@@ -11,4 +11,4 @@ class TaskAdmin(admin.ModelAdmin):
     search_fields = ('description',)
     inlines = [TimeLogInline]
 
-admin.site.register(Task, TaskAdmin) 
+admin.site.register(Task, TaskAdmin)
