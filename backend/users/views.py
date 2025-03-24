@@ -56,8 +56,8 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         Only system administrators can update or delete any user information.
         """
         if self.request.method in ['PUT', 'PATCH', 'DELETE']:
-            return [permissions.IsAuthenticated(), permissions.IsAdminUser()]
-        return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsAdminUserType()]
+        return [permissions.IsAuthenticated(), IsAdminUserType()]
 
     def get_object(self):
         """
@@ -65,7 +65,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         System administrators can retrieve any user's information.
         """
         obj = super().get_object()
-        if not self.request.user.is_staff and self.request.user.id != obj.id:
+        if not self.request.user.is_admin and self.request.user.id != obj.id:
             self.permission_denied(self.request, message="You do not have permission to access this user's information.")
         return obj
 
