@@ -20,7 +20,7 @@ class Command(BaseCommand):
                     username='admin',
                     email='admin@example.com',
                     password='admin123',
-                    role=User.Role.SYSTEM_ADMIN
+                    role=User.user_type.ADMIN
                 )
                 self.stdout.write(self.style.SUCCESS(f'Admin user created: {admin_user.username}'))
             else:
@@ -28,9 +28,9 @@ class Command(BaseCommand):
             
             # Create a test user for each role
             roles = [
-                (User.Role.PRODUCT_OWNER, 'product_owner'),
-                (User.Role.SCRUM_MASTER, 'scrum_master'),
-                (User.Role.DEVELOPER, 'developer')
+                (ProjectMember.Role.PRODUCT_OWNER, 'product_owner'),
+                (ProjectMember.Role.SCRUM_MASTER, 'scrum_master'),
+                (ProjectMember.Role.DEVELOPER, 'developer')
             ]
             
             for role, username in roles:

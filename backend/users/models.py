@@ -5,19 +5,17 @@ from django.utils import timezone
 
 
 class User(AbstractUser):
-    """Custom user model to support all the user types in the system"""
+    """Custom user model to support admin/user distinction"""
     
-    class Role(models.TextChoices):
-        SYSTEM_ADMIN = 'SYSTEM_ADMIN', _('System Administrator')
-        PRODUCT_OWNER = 'PRODUCT_OWNER', _('Product Owner')
-        SCRUM_MASTER = 'SCRUM_MASTER', _('Scrum Master')
-        DEVELOPER = 'DEVELOPER', _('Developer')
+    class UserType(models.TextChoices):
+        ADMIN = 'ADMIN', _('Admin')
+        USER = 'USER', _('User')
     
     email = models.EmailField(_('email address'), unique=True)
-    role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        default=Role.DEVELOPER,
+    user_type = models.CharField(
+        max_length=10,
+        choices=UserType.choices,
+        default=UserType.USER,
     )
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
     last_login_timestamp = models.DateTimeField(null=True, blank=True)
@@ -31,23 +29,15 @@ class User(AbstractUser):
         verbose_name_plural = _('users')
     
     def __str__(self):
-        return f"{self.username} ({self.get_role_display()})"
+        return f"{self.username} ({self.get_user_type_display()})"
     
     @property
-    def is_system_admin(self):
-        return self.role == self.Role.SYSTEM_ADMIN
+    def is_admin(self):
+        return self.user_type == self.UserType.ADMIN
     
     @property
-    def is_product_owner(self):
-        return self.role == self.Role.PRODUCT_OWNER
-    
-    @property
-    def is_scrum_master(self):
-        return self.role == self.Role.SCRUM_MASTER
-    
-    @property
-    def is_developer(self):
-        return self.role == self.Role.DEVELOPER
+    def is_user(self):
+        return self.user_type == self.UserType.USER
         
     def record_login(self, ip_address=None):
         """Record successful login information"""
@@ -60,4 +50,4 @@ class User(AbstractUser):
         """Record failed login attempt"""
         self.failed_login_attempts += 1
         self.last_failed_login = timezone.now()
-        self.save(update_fields=['failed_login_attempts', 'last_failed_login']) 
+        self.save(update_fields=['failed_login_attempts', 'last_failed_login'])

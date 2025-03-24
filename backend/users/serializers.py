@@ -23,7 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 
-                  'password', 'password_confirm', 'role', 'last_login',
+                  'password', 'password_confirm', 'user_type', 'last_login',
                   'last_login_timestamp', 'last_login_ip']
         read_only_fields = ['last_login', 'last_login_timestamp', 'last_login_ip']
     
@@ -90,7 +90,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 
-                  'role', 'last_login', 'last_login_timestamp', 'last_login_ip',
+                  'user_type', 'last_login', 'last_login_timestamp', 'last_login_ip',
                   'is_active', 'date_joined', 'two_factor_enabled']
         read_only_fields = ['last_login', 'last_login_timestamp', 'last_login_ip', 'date_joined']
 

@@ -20,7 +20,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     );
   }
 
-  if (adminOnly && user?.role !== 'SYSTEM_ADMIN') {
+  if (adminOnly && user?.user_type !== 'ADMIN') {
     return <Navigate to="/dashboard" />;
   }
 
