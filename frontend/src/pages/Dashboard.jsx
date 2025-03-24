@@ -51,7 +51,7 @@ const Dashboard = () => {
             <Card.Body>
               <p><strong>Username:</strong> {user?.username}</p>
               <p><strong>Email:</strong> {user?.email}</p>
-              <p><strong>Role:</strong> {user?.role}</p>
+              <p><strong>Role:</strong> {user?.user_type}</p>
             </Card.Body>
           </Card>
         </Col>
