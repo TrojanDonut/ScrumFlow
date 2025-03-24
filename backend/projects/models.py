@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 
 class Project(models.Model):
@@ -28,6 +29,17 @@ class ProjectMember(models.Model):
 
     class Meta:
         unique_together = ('project', 'user')
+    
+    def save(self, *args, **kwargs):
+        # Check if the role is Scrum Master or Product Owner
+        if self.role in [self.Role.SCRUM_MASTER, self.Role.PRODUCT_OWNER]:
+            # Check if another member with the same role exists in the project
+            if ProjectMember.objects.filter(
+                project=self.project,
+                role=self.role
+            ).exclude(id=self.id).exists():
+                raise ValidationError(f"Only one {self.get_role_display()} is allowed per project.")
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user.username} as {self.get_role_display()} in {self.project.name}"

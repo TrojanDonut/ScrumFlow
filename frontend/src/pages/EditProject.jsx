@@ -56,9 +56,6 @@ const EditProject = () => {
     );
   }
 
-  if (error) {
-    return <Alert variant="danger">{formatErrorMessage(error)}</Alert>;
-  }
 
 return (
   <div>

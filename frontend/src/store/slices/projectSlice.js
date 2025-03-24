@@ -352,7 +352,7 @@ const projectSlice = createSlice({
       })
       .addCase(updateProjectMemberRole.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to update member role';
+        state.error = 'Failed to update member role';
       });
   },
 });
