@@ -1,1 +1,1 @@
-# Users app initialization 
+# Users app initialization

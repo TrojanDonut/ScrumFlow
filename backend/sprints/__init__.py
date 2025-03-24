@@ -1,1 +1,1 @@
-# Sprints app initialization 
+# Sprints app initialization

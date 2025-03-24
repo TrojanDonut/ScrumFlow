@@ -8,7 +8,7 @@ class Project(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-   
+
     def __str__(self):
         return self.name
 
@@ -36,8 +36,8 @@ class ProjectMember(models.Model):
 class ProjectWallPost(models.Model):
     """Model for posts on the project wall"""
     project = models.ForeignKey(
-        Project, 
-        on_delete=models.CASCADE, 
+        Project,
+        on_delete=models.CASCADE,
         related_name='posts'
     )
     author = models.ForeignKey(

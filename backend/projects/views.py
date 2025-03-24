@@ -37,7 +37,7 @@ class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
         context = super().get_serializer_context()
         context['include_members'] = True
         return context
-    
+
 
 class ProjectMemberListCreateView(generics.ListCreateAPIView):
     """

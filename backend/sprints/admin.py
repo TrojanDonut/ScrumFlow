@@ -7,4 +7,4 @@ class SprintAdmin(admin.ModelAdmin):
     search_fields = ('project__name',)
     date_hierarchy = 'start_date'
 
-admin.site.register(Sprint, SprintAdmin) 
+admin.site.register(Sprint, SprintAdmin)

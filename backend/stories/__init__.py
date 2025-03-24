@@ -1,1 +1,1 @@
-# Stories app initialization 
+# Stories app initialization

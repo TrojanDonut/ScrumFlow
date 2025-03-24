@@ -9,6 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class SprintListCreateView(generics.ListCreateAPIView):
     """API view for listing and creating sprints."""
     serializer_class = SprintSerializer
@@ -32,7 +33,7 @@ class SprintListCreateView(generics.ListCreateAPIView):
         if not request.user.is_authenticated:
             logger.error("User is not authenticated")
             return Response(
-                {"error": "User is not authenticated"}, 
+                {"error": "User is not authenticated"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
@@ -41,7 +42,7 @@ class SprintListCreateView(generics.ListCreateAPIView):
         except Project.DoesNotExist:
             logger.error(f"Project with id {project_id} does not exist")
             return Response(
-                {"error": "Project not found"}, 
+                {"error": "Project not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -56,38 +57,39 @@ class SprintListCreateView(generics.ListCreateAPIView):
                 serializer.save()
                 logger.debug("Sprint created successfully")
                 return Response(
-                    serializer.data, 
+                    serializer.data,
                     status=status.HTTP_201_CREATED
                 )
             except DjangoValidationError as e:
                 logger.error(f"Django validation error: {e}")
                 return Response(
-                    {"error": str(e)}, 
+                    {"error": str(e)},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         logger.error(f"Error creating sprint: {serializer.errors}")
         return Response(
-            serializer.errors, 
+            serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+
 
 class SprintDetailView(generics.RetrieveUpdateDestroyAPIView):
     """API view for retrieving, updating, and deleting a sprint."""
     queryset = Sprint.objects.all()
     serializer_class = SprintSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def update(self, request, *args, **kwargs):
         """Custom update method to validate and update a sprint."""
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        
+
         serializer = self.get_serializer(
-            instance, 
-            data=request.data, 
+            instance,
+            data=request.data,
             partial=partial
         )
-        
+
         if serializer.is_valid():
             try:
                 serializer.save()
@@ -95,7 +97,7 @@ class SprintDetailView(generics.RetrieveUpdateDestroyAPIView):
             except DjangoValidationError as e:
                 logger.error(f"Django validation error: {e}")
                 return Response(
-                    {"error": str(e)}, 
+                    {"error": str(e)},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

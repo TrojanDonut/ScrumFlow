@@ -1,1 +1,1 @@
-# Django project initialization 
+# Django project initialization

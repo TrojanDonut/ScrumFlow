@@ -12,7 +12,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         self.stdout.write('Creating initial data...')
-        
+
         with transaction.atomic():
             # Create admin user if it doesn't exist
             if not User.objects.filter(username='admin').exists():
@@ -25,14 +25,14 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f'Admin user created: {admin_user.username}'))
             else:
                 self.stdout.write(self.style.SUCCESS('Admin user already exists'))
-            
+
             # Create a test user for each role
             roles = [
                 (ProjectMember.Role.PRODUCT_OWNER, 'product_owner'),
                 (ProjectMember.Role.SCRUM_MASTER, 'scrum_master'),
                 (ProjectMember.Role.DEVELOPER, 'developer')
             ]
-            
+
             for role, username in roles:
                 if not User.objects.filter(username=username).exists():
                     user = User.objects.create_user(
@@ -46,7 +46,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(f'User created: {user.username}'))
                 else:
                     self.stdout.write(self.style.SUCCESS(f'User {username} already exists'))
-            
+
             # Temporarily commented out project creation for testing authentication
             try:
                 if not Project.objects.filter(name='Sample Project').exists():
@@ -54,7 +54,7 @@ class Command(BaseCommand):
                         name='Sample Project',
                         description='This is a sample project for testing the Scrum Workflow Application.'
                     )
-                    
+
                     # Add members to the project
                     for user in User.objects.exclude(username='admin'):
                         role = ProjectMember.Role.DEVELOPER
@@ -62,13 +62,13 @@ class Command(BaseCommand):
                             role = ProjectMember.Role.PRODUCT_OWNER
                         elif user.role == User.Role.SCRUM_MASTER:
                             role = ProjectMember.Role.SCRUM_MASTER
-                        
+
                         ProjectMember.objects.create(
                             project=project,
                             user=user,
                             role=role
                         )
-                    
+
                     self.stdout.write(self.style.SUCCESS('Sample project created with members'))
                 else:
                     self.stdout.write(self.style.SUCCESS('Sample project already exists'))
@@ -79,7 +79,7 @@ class Command(BaseCommand):
             try:
                 project = Project.objects.get(name='Sample Project')
                 created_by_user = User.objects.get(username='product_owner')
-                
+
                 if not UserStory.objects.filter(title='Initial User Story').exists():
                     user_story = UserStory.objects.create(
                         project=project,
@@ -98,7 +98,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS('Initial user story already exists'))
             except Exception as e:
                 self.stdout.write(self.style.WARNING(f'Error creating initial user story: {str(e)}'))
-            
+
             # Create initial tasks
             try:
                 user_story = UserStory.objects.get(title='Initial User Story')
@@ -125,7 +125,7 @@ class Command(BaseCommand):
                         'created_by': User.objects.get(username='product_owner')
                     }
                 ]
-                
+
                 for task_data in tasks:
                     if not Task.objects.filter(title=task_data['title']).exists():
                         task = Task.objects.create(
@@ -141,5 +141,5 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.SUCCESS(f'Task {task_data["title"]} already exists'))
             except Exception as e:
                 self.stdout.write(self.style.WARNING(f'Error creating initial tasks: {str(e)}'))
-            
-        self.stdout.write(self.style.SUCCESS('Initial data creation complete!')) 
+
+        self.stdout.write(self.style.SUCCESS('Initial data creation complete!'))

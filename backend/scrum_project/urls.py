@@ -20,20 +20,22 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-   path('admin/', admin.site.urls),
-    
+    path('admin/', admin.site.urls),
+
     # API URLs
-   path('api/', include('users.urls')),
-   path('api/', include('projects.urls')),
-   path('api/', include('sprints.urls')),
-   path('api/', include('stories.urls')),
-   path('api/', include('tasks.urls')),
-    
+    path('api/', include('users.urls')),
+    path('api/', include('projects.urls')),
+    path('api/', include('sprints.urls')),
+    path('api/', include('stories.urls')),
+    path('api/', include('tasks.urls')),
+
     # API documentation
-   path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-   path('api/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0),
+         name='schema-swagger-ui'),
+    path('api/redoc/', schema_view.with_ui('redoc', cache_timeout=0),
+         name='schema-redoc'),
 ]
 
 # Serve media files in development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
