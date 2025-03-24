@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             # Create admin user if it doesn't exist
-            if not User.objects.filter(username='admin').exists():
+            if not User.objects.filter(username__iexact='admin').exists():
                 admin_user = User.objects.create_superuser(
                     username='admin',
                     email='admin@example.com',
@@ -41,7 +41,7 @@ class Command(BaseCommand):
             ]
 
             for role, username in roles:
-                if not User.objects.filter(username=username).exists():
+                if not User.objects.filter(username__iexact=username).exists():
                     user = User.objects.create_user(
                         username=username,
                         email=f'{username}@example.com',
