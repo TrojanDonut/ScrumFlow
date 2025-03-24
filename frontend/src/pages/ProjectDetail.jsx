@@ -110,7 +110,7 @@ const ProjectDetail = () => {
               <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="form-control" required />
             </div>
             <div className="mb-3">
-              <label className="form-label">Velocity:</label>
+              <label className="form-label">Velocity (v točkah):</label>
               <input type="number" name="velocity" value={formData.velocity} onChange={handleChange} className="form-control" required />
             </div>
             <Button type="submit" variant="primary" disabled={loading}>
@@ -128,7 +128,18 @@ const ProjectDetail = () => {
             <ListGroup>
               {sprints.map((sprint) => (
                 <ListGroup.Item key={sprint.id}>
-                  Sprint from {formatDate(sprint.start_date)} to {formatDate(sprint.end_date)} (Velocity: {sprint.velocity})
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      Sprint from {formatDate(sprint.start_date)} to {formatDate(sprint.end_date)} (Velocity (v točkah): {sprint.velocity})
+                    </div>
+                    <Button
+                      variant="outline-primary"
+                      as={Link}
+                      to={`/projects/${id}/sprints/${sprint.id}/user-stories`}
+                    >
+                      View
+                    </Button>
+                  </div>
                 </ListGroup.Item>
               ))}
             </ListGroup>

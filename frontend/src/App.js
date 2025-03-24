@@ -17,6 +17,9 @@ import Instructions from './pages/Instructions';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCurrentUser } from './store/slices/authSlice';
 import EditProject from './pages/EditProject';
+import UserStories from './pages/UserStories';
+import AddUserStory from './pages/AddUserStory';
+import StoryInfo from './pages/StoryInfo';
 
 function App() {
   const { isAuthenticated } = useSelector(state => state.auth);
@@ -102,6 +105,24 @@ function App() {
             </ProtectedRoute>
           } />
           
+          <Route path="/projects/:projectId/sprints/:sprintId/user-stories" element={
+            <ProtectedRoute>
+              <UserStories />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/:projectId/sprints/:sprintId/user-stories/add" element={
+            <ProtectedRoute>
+              <AddUserStory />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/:projectId/sprints/:sprintId/user-stories/:storyId" element={
+            <ProtectedRoute>
+              <StoryInfo />
+            </ProtectedRoute>
+          } />
+
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="*" element={<h1>404 - Page Not Found</h1>} />
         </Routes>
@@ -110,4 +131,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
