@@ -1,13 +1,33 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 
 class Project(models.Model):
     """Project model to represent a Scrum project"""
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True)
+    product_owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='owned_projects'
+    )
+    scrum_master = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='scrum_master_projects'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        # Ensure product_owner and scrum_master are not the same user
+        if self.product_owner == self.scrum_master:
+            raise ValidationError("Product Owner and Scrum Master cannot be the same user.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -28,6 +48,17 @@ class ProjectMember(models.Model):
 
     class Meta:
         unique_together = ('project', 'user')
+    
+    def save(self, *args, **kwargs):
+        # Check if the role is Scrum Master or Product Owner
+        if self.role in [self.Role.SCRUM_MASTER, self.Role.PRODUCT_OWNER]:
+            # Check if another member with the same role exists in the project
+            if ProjectMember.objects.filter(
+                project=self.project,
+                role=self.role
+            ).exclude(id=self.id).exists():
+                raise ValidationError(f"Only one {self.get_role_display()} is allowed per project.")
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user.username} as {self.get_role_display()} in {self.project.name}"

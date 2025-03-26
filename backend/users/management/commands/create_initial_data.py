@@ -65,12 +65,18 @@ class Command(BaseCommand):
             # authentication
             try:
                 if not Project.objects.filter(name='Sample Project').exists():
+                    # Fetch the users for product_owner and scrum_master roles
+                    product_owner_user = User.objects.get(username='product_owner')
+                    scrum_master_user = User.objects.get(username='scrum_master')
+
                     project = Project.objects.create(
                         name='Sample Project',
                         description=(
                             'This is a sample project for testing the '
                             'Scrum Workflow Application.'
-                        )
+                        ),
+                        product_owner=product_owner_user,
+                        scrum_master=scrum_master_user
                     )
 
                     # Add members to the project

@@ -5,7 +5,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
-  async (_, { rejectWithValue, getState }) => {
+  async (show_all, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
       const token = auth.token || localStorage.getItem('access');
@@ -14,7 +14,7 @@ export const fetchUsers = createAsyncThunk(
         throw new Error('No token found');
       }
       
-      const response = await axios.get(`${API_URL}/users/`, {
+      const response = await axios.get(`${API_URL}/users/?${show_all.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

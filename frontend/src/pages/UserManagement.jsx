@@ -40,7 +40,7 @@ const UserManagement = () => {
   const isSystemAdmin = currentUser && currentUser.user_type === 'ADMIN';
 
   useEffect(() => {
-    dispatch(fetchUsers());
+    dispatch(fetchUsers(true));
   }, [dispatch]);
 
   useEffect(() => {
@@ -153,7 +153,7 @@ const UserManagement = () => {
         }, 5000);
         
         // Refresh the user list
-        dispatch(fetchUsers());
+        dispatch(fetchUsers(true));
       })
       .catch((error) => {
         console.error('Error creating user:', error);
@@ -188,7 +188,7 @@ const UserManagement = () => {
         });
         
         // Refresh the user list
-        dispatch(fetchUsers());
+        dispatch(fetchUsers(true));
       })
       .catch((error) => {
         console.error('Error updating user:', error);
@@ -215,7 +215,7 @@ const UserManagement = () => {
         setSelectedUser(null);
         
         // Refresh the user list
-        dispatch(fetchUsers());
+        dispatch(fetchUsers(true));
       })
       .catch((error) => {
         console.error('Error deleting user:', error);
