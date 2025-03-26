@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { Form, Button, Spinner, Alert, Card, ListGroup, Modal } from 'react-bootstrap';
-import { fetchProjectById, updateProject, fetchAllUsers, clearProjectError, removeMemberFromProject, addMemberToProject } from '../store/slices/projectSlice';
+import { Form, Button, Spinner, Alert } from 'react-bootstrap';
+import { fetchProjectById, updateProject, fetchAllUsers, clearProjectError } from '../store/slices/projectSlice';
 import { formatErrorMessage } from '../utils/errorUtils';
 import AssignedUsersList from '../pages/AssignedUsersList';
 
@@ -10,23 +10,23 @@ const EditProject = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { currentProject, loading, error, members } = useSelector(state => state.projects);
-  const [formData, setFormData] = useState({ name: '', description: '' });
-  const [showModal, setShowModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState('');
-  const [role, setRole] = useState('DEVELOPER');
+  const { users } = useSelector(state => state.users);
+  const [formData, setFormData] = useState({ name: '', description: '', productOwner: '', scrumMaster: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(fetchProjectById(id));
     dispatch(fetchAllUsers());
-    if (currentProject) {
-      setFormData({ name: currentProject.name, description: currentProject.description });
-    }
   }, [dispatch, id]);
 
   useEffect(() => {
     if (currentProject) {
-      setFormData({ name: currentProject.name, description: currentProject.description });
+      setFormData({
+        name: currentProject.name,
+        description: currentProject.description,
+        productOwner: currentProject.product_owner || '',
+        scrumMaster: currentProject.scrum_master || '',
+      });
     }
   }, [currentProject]);
 
@@ -40,12 +40,6 @@ const EditProject = () => {
     navigate(`/projects/${id}`);
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedUser('');
-    setRole('DEVELOPER');
-  };
-
   if (loading) {
     return (
       <div className="d-flex justify-content-center mt-5">
@@ -57,41 +51,80 @@ const EditProject = () => {
   }
 
 
-return (
-  <div>
-    <h1>Edit Project</h1>
-    <Form onSubmit={handleSubmit}>
-      <Form.Group controlId="formProjectName" className="mb-4">
-        <Form.Label>Project Name</Form.Label>
-        <Form.Control
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
-      </Form.Group>
-      <Form.Group controlId="formProjectDescription" className="mb-4">
-        <Form.Label>Project Description</Form.Label>
-        <Form.Control
-          as="textarea"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          required
-        />
-      </Form.Group>
 
-      {error && (
-        <Alert variant="danger" onClose={() => dispatch(clearProjectError())} dismissible>
-          {formatErrorMessage(error)}
-        </Alert>
-      )}
-      <AssignedUsersList projectId={id} />
+  return (
+    <div>
+      <h1>Edit Project</h1>
+      <Form onSubmit={handleSubmit}>
+        <Form.Group controlId="formProjectName" className="mb-4">
+          <Form.Label>Project Name</Form.Label>
+          <Form.Control
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+
+        <Form.Group controlId="formProjectDescription" className="mb-4">
+          <Form.Label>Project Description</Form.Label>
+          <Form.Control
+            as="textarea"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+
+        <Form.Group controlId="formProductOwner" className="mb-4">
+          <Form.Label>Product Owner</Form.Label>
+          <Form.Control
+            as="select"
+            name="productOwner"
+            value={formData.productOwner}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select Product Owner</option>
+            {members.map(user => (
+              <option key={user.id} value={user.id}>
+                {user.username}
+              </option>
+            ))}
+          </Form.Control>
+        </Form.Group>
+
+        <Form.Group controlId="formScrumMaster" className="mb-4">
+          <Form.Label>Scrum Master</Form.Label>
+          <Form.Control
+            as="select"
+            name="scrumMaster"
+            value={formData.scrumMaster}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select Scrum Master</option>
+            {members.map(user => (
+              <option key={user.id} value={user.id}>
+                {user.username}
+              </option>
+            ))}
+          </Form.Control>
+        </Form.Group>
+
+        {error && (
+          <Alert variant="danger" onClose={() => dispatch(clearProjectError())} dismissible>
+            {formatErrorMessage(error)}
+          </Alert>
+        )}
+
+        <AssignedUsersList projectId={id} />
         <Button variant="primary" type="submit">
           Save Changes
         </Button>
-    </Form>
+      </Form>
     </div>
   );
 };

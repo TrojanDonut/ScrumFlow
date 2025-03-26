@@ -98,8 +98,6 @@ const AssignedUsersList = ({ projectId }) => {
               <Form.Label>Role</Form.Label>
               <Form.Control as="select" value={role} onChange={(e) => setRole(e.target.value)}>
                 <option value="DEVELOPER">Developer</option>
-                <option value="SCRUM_MASTER">Scrum Master</option>
-                <option value="PRODUCT_OWNER">Product Owner</option>
               </Form.Control>
             </Form.Group>
           </Form>

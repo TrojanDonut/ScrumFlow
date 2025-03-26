@@ -9,7 +9,7 @@ import { fetchUsers } from '../store/slices/userSlice'; // Assuming you have a s
 const CreateProject = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector(state => state.projects);
+  const { loading, error, members } = useSelector(state => state.projects);
   const { users } = useSelector(state => state.users); // Assuming users are stored in state.users
   const [project, setProject] = useState({
     name: '',
@@ -78,7 +78,7 @@ const CreateProject = () => {
               required
             >
               <option value="">Select a Product Owner</option>
-              {users.map(user => (
+              {members.map(user => (
                 <option key={user.id} value={user.id}>{user.username}</option>
               ))}
             </Form.Control>
@@ -93,7 +93,7 @@ const CreateProject = () => {
               required
             >
               <option value="">Select a Scrum Master</option>
-              {users.map(user => (
+              {members.map(user => (
                 <option key={user.id} value={user.id}>{user.username}</option>
               ))}
             </Form.Control>
