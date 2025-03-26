@@ -4,6 +4,7 @@ from .serializers import (
     ProjectSerializer, ProjectMemberSerializer, ProjectWallPostSerializer,
     ProjectWallCommentSerializer, ProjectDocumentSerializer
 )
+from rest_framework.exceptions import ValidationError
 
 class ProjectListCreateView(generics.ListCreateAPIView):
     """
@@ -15,6 +16,18 @@ class ProjectListCreateView(generics.ListCreateAPIView):
     """
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    def perform_create(self, serializer):
+        product_owner = self.request.data.get('product_owner')
+        scrum_master = self.request.data.get('scrum_master')
+
+        if not product_owner or not scrum_master:
+            raise ValidationError("Both Product Owner and Scrum Master must be provided.")
+
+        if product_owner == scrum_master:
+            raise ValidationError("Product Owner and Scrum Master cannot be the same user.")
+
+        serializer.save()
 
 class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
     """

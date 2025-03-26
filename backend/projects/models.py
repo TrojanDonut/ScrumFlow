@@ -7,8 +7,27 @@ class Project(models.Model):
     """Project model to represent a Scrum project"""
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True)
+    product_owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='owned_projects'
+    )
+    scrum_master = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='scrum_master_projects'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        # Ensure product_owner and scrum_master are not the same user
+        if self.product_owner == self.scrum_master:
+            raise ValidationError("Product Owner and Scrum Master cannot be the same user.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
