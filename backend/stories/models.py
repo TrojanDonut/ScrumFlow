@@ -1,6 +1,5 @@
 from django.db import models
 from django.conf import settings
-from projects.models import Project
 from sprints.models import Sprint
 
 
@@ -8,10 +7,10 @@ class UserStory(models.Model):
     """User story model for representing features from a user's perspective"""
 
     class Priority(models.TextChoices):
-        MUST_HAVE = 'MUST_HAVE', 'Must Have'
-        SHOULD_HAVE = 'SHOULD_HAVE', 'Should Have'
-        COULD_HAVE = 'COULD_HAVE', 'Could Have'
-        WONT_HAVE = 'WONT_HAVE', 'Won\'t Have This Time'
+        MUST_HAVE = 'MUST_HAVE'
+        SHOULD_HAVE = 'SHOULD_HAVE'
+        COULD_HAVE = 'COULD_HAVE'
+        WONT_HAVE = 'WONT_HAVE'
 
     class Status(models.TextChoices):
         NOT_STARTED = 'NOT_STARTED', 'Not Started'
@@ -20,17 +19,12 @@ class UserStory(models.Model):
         ACCEPTED = 'ACCEPTED', 'Accepted'
         REJECTED = 'REJECTED', 'Rejected'
 
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='stories')
-    sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE, related_name='user_stories')
+    sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE, related_name='user_stories', null=True, blank=True)
     name = models.CharField(max_length=255)
     text = models.TextField()
     acceptance_tests = models.TextField()
-    priority = models.CharField(max_length=50, choices=[
-        ('must have', 'Must Have'),
-        ('should have', 'Should Have'),
-        ('could have', 'Could Have'),
-        ("won't have this time", "Won't Have This Time"),
-    ])
+    priority = models.CharField(max_length=50, choices=Priority.choices, default=Priority.MUST_HAVE)
+
     business_value = models.PositiveIntegerField()
     story_points = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.NOT_STARTED)
@@ -46,7 +40,7 @@ class UserStory(models.Model):
 
     class Meta:
         ordering = ['-priority', '-business_value']
-        unique_together = ['project', 'name']
+        unique_together = ['sprint', 'name']
         verbose_name_plural = 'User stories'
 
     def __str__(self):

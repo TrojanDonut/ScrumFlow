@@ -1,25 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { Button, Alert, ListGroup } from 'react-bootstrap';
+import { fetchStories } from '../store/slices/storySlice';
+import { useDispatch, useSelector } from 'react-redux';
+import AddUserStory from './AddUserStory'; // Import the AddUserStory component
 
 const UserStories = () => {
   const { projectId, sprintId } = useParams();
   const navigate = useNavigate();
-  const [userStories, setUserStories] = useState([]);
   const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false); // State to control modal visibility
+  const [isEditMode, setIsEditMode] = useState(false); // State to track if modal is in edit mode
+  const [selectedStory, setSelectedStory] = useState(null); // State to hold the selected story for editing
+  const dispatch = useDispatch();
+  const { stories } = useSelector((state) => state.stories);
 
   useEffect(() => {
-    const fetchUserStories = async () => {
-      try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/projects/${projectId}/sprints/${sprintId}/user-stories/`);
-        setUserStories(response.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchUserStories();
+    dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
   }, [projectId, sprintId]);
+
+  const handleUserStoryAdded = (newStory) => {
+    // Optionally handle the new story (e.g., refresh the list or update state)
+    dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
+  };
+
+  const handleEditStory = (story) => {
+    setSelectedStory(story);
+    setIsEditMode(true);
+    setShowModal(true);
+  };
 
   return (
     <div>
@@ -27,32 +36,48 @@ const UserStories = () => {
         <h1>User Stories for Sprint {sprintId}</h1>
         <Button
           variant="primary"
-          onClick={() => navigate(`/projects/${projectId}/sprints/${sprintId}/user-stories/add`)}
+          onClick={() => {
+            setSelectedStory(null);
+            setIsEditMode(false);
+            setShowModal(true);
+          }}
         >
           Add New User Story
         </Button>
       </div>
       <p>Project ID: {projectId}</p>
       {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
-      {userStories.length > 0 ? (
+      {stories.length > 0 ? (
         <ListGroup>
-          {userStories.map((story) => (
+          {stories.map((story) => (
             <ListGroup.Item key={story.id} className="d-flex justify-content-between align-items-center">
               <div>
                 <strong>{story.name}</strong> - {story.priority} (Business Value (€): {story.business_value})
               </div>
-              <Button
-                variant="outline-primary" 
-                onClick={() => navigate(`/projects/${projectId}/sprints/${sprintId}/user-stories/${story.id}`)}
-              >
-                View
-              </Button>
+              <div>
+                <Button
+                  variant="outline-info"
+                  className="me-2"
+                  onClick={() => handleEditStory(story)}
+                >
+                  Edit
+                </Button>
+              </div>
             </ListGroup.Item>
           ))}
         </ListGroup>
       ) : (
         <p>No user stories available.</p>
       )}
+
+      {/* AddUserStory Modal */}
+      <AddUserStory
+        show={showModal}
+        handleClose={() => setShowModal(false)} // Close the modal
+        onUserStoryAdded={handleUserStoryAdded} // Callback for when a story is added
+        userStoryData={selectedStory} // Pass the selected story for editing
+        isEditMode={isEditMode} // Pass the edit mode flag
+      />
     </div>
   );
 };

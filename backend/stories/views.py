@@ -15,9 +15,8 @@ class UserStoryListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Return stories for a specific project."""
-        project_id = self.kwargs['project_id']
-        return UserStory.objects.filter(project_id=project_id)
+        """Return all user stories."""
+        return UserStory.objects.all()
 
     def create(self, request, *args, **kwargs):
         """Create a new user story and set the created_by field."""
@@ -65,12 +64,18 @@ class SprintStoriesView(views.APIView):
     """API view for managing stories in a sprint."""
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
-        """Get method is not implemented yet."""
-        return Response(
-            {"message": "Not implemented yet"},
-            status=status.HTTP_501_NOT_IMPLEMENTED
-        )
+    def get(self, request, sprint_id, *args, **kwargs):
+        """Retrieve all user stories for a specific sprint."""
+        try:
+            stories = UserStory.objects.filter(sprint_id=sprint_id)
+            serializer = UserStorySerializer(stories, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error fetching stories for sprint {sprint_id}: {e}")
+            return Response(
+                {"error": "Failed to fetch stories for the sprint."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class ProductBacklogView(views.APIView):
