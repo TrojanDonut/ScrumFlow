@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap'; // Import Collapse from react-bootstrap
-import { fetchStories } from '../store/slices/storySlice';
+import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
+import { fetchStories, removeStoryFromSprint } from '../store/slices/storySlice';
 import { useDispatch, useSelector } from 'react-redux';
-import AddUserStory from './AddUserStory'; // Import the AddUserStory component
+import AddUserStory from './AddUserStory';
+import UserStoryColumn from './UserStoryColumn'; // Import the new component
+import './UserStories.css';
 
 const UserStories = () => {
   const { projectId, sprintId } = useParams();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false); // State to control modal visibility
-  const [isEditMode, setIsEditMode] = useState(false); // State to track if modal is in edit mode
-  const [selectedStory, setSelectedStory] = useState(null); // State to hold the selected story for editing
-  const [expandedStoryId, setExpandedStoryId] = useState(null); // State to track expanded story
+  const [showModal, setShowModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedStory, setSelectedStory] = useState(null);
+  const [expandedStoryId, setExpandedStoryId] = useState(null);
   const dispatch = useDispatch();
   const { stories } = useSelector((state) => state.stories);
 
@@ -21,7 +23,6 @@ const UserStories = () => {
   }, [projectId, sprintId]);
 
   const handleUserStoryAdded = (newStory) => {
-    // Optionally handle the new story (e.g., refresh the list or update state)
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
   };
 
@@ -35,6 +36,20 @@ const UserStories = () => {
     setExpandedStoryId(expandedStoryId === storyId ? null : storyId);
   };
 
+  const handleRemoveFromSprint = async (storyId) => {
+    try {
+      await dispatch(removeStoryFromSprint({ storyId })).unwrap();
+      dispatch(fetchStories({ projectId, sprintId })); // Re-fetch stories
+    } catch (err) {
+      setError('Failed to remove story from sprint.');
+    }
+  };
+
+  // Divide stories into categories based on their state
+  const states = ['NOT_STARTED', 'IN_PROGRESS', 'DONE', 'ACCEPTED', 'REJECTED'];
+  const categorizedStories = states.map((state) =>
+    stories.filter((story) => story.status === state)
+  );
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center">
@@ -52,49 +67,27 @@ const UserStories = () => {
       </div>
       <p>Project ID: {projectId}</p>
       {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
-      {stories.length > 0 ? (
-        <ListGroup>
-          {stories.map((story) => (
-            <ListGroup.Item key={story.id} className="d-flex flex-column">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <strong>{story.name}</strong> - {story.priority} (Business Value (€): {story.business_value})
-                </div>
-                <div>
-                  <Button
-                    variant="outline-primary"
-                    className="me-2"
-                    onClick={() => handleEditStory(story)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline-secondary"
-                    onClick={() => toggleExpandStory(story.id)}
-                  >
-                    {expandedStoryId === story.id ? 'Collapse' : 'Expand'}
-                  </Button>
-                </div>
-              </div>
-              <Collapse in={expandedStoryId === story.id}>
-                <div className="mt-2">
-                  <p>{story.text}</p>
-                </div>
-              </Collapse>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
-      ) : (
-        <p>No user stories available.</p>
-      )}
+      <div className="row">
+        {states.map((state, index) => (
+          <UserStoryColumn
+            key={state}
+            title={state}
+            stories={categorizedStories[index]}
+            onEdit={handleEditStory}
+            onToggleExpand={toggleExpandStory}
+            expandedStoryId={expandedStoryId}
+            onRemoveFromSprint={handleRemoveFromSprint}
+          />
+        ))}
+      </div>
 
       {/* AddUserStory Modal */}
       <AddUserStory
         show={showModal}
-        handleClose={() => setShowModal(false)} // Close the modal
-        onUserStoryAdded={handleUserStoryAdded} // Callback for when a story is added
-        userStoryData={selectedStory} // Pass the selected story for editing
-        isEditMode={isEditMode} // Pass the edit mode flag
+        handleClose={() => setShowModal(false)}
+        onUserStoryAdded={handleUserStoryAdded}
+        userStoryData={selectedStory}
+        isEditMode={isEditMode}
       />
     </div>
   );

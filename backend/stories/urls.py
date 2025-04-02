@@ -17,4 +17,5 @@ urlpatterns = [
     path('stories/<int:story_id>/estimate/', views.StoryEstimateView.as_view(), name='story-estimate'),
     path('stories/<int:story_id>/planning-poker/', views.PlanningPokerView.as_view(), name='planning-poker'),
     path('sprints/<int:sprint_id>/', include(router.urls)),
+    path('stories/<int:story_id>/remove-from-sprint/', views.RemoveStoryFromSprintView.as_view(), name='remove-story-from-sprint'),
 ]

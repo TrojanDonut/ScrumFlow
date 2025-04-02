@@ -1,6 +1,7 @@
 from rest_framework import generics, status, views, viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 from .models import UserStory
 from .serializers import UserStorySerializer
 import logging
@@ -39,6 +40,20 @@ class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
             status=status.HTTP_501_NOT_IMPLEMENTED
         )
 
+class RemoveStoryFromSprintView(APIView):
+    """API view for removing a story from a sprint."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, story_id, *args, **kwargs):
+        try:
+            story = UserStory.objects.get(id=story_id)
+            story.sprint = None
+            story.save()
+            return Response({"message": "Story removed from sprint successfully."}, status=status.HTTP_200_OK)
+        except UserStory.DoesNotExist:
+            return Response({"error": "Story not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserStoryCommentListCreateView(generics.ListCreateAPIView):
     """API view for listing and creating comments on user stories."""

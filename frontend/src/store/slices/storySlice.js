@@ -92,6 +92,30 @@ export const updateStory = createAsyncThunk(
   }
 );
 
+export const removeStoryFromSprint = createAsyncThunk(
+  'stories/removeStoryFromSprint',
+  async ({ storyId }, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(`${API_URL}/stories/${storyId}/remove-from-sprint/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
 const initialState = {
   stories: [],
   backlogStories: [],
@@ -164,6 +188,21 @@ const storySlice = createSlice({
       .addCase(updateStory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to update story';
+      })
+      .addCase(removeStoryFromSprint.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(removeStoryFromSprint.fulfilled, (state, action) => {
+        state.loading = false;
+        const storyId = action.meta.arg.storyId;
+        state.stories = state.stories.map(story =>
+          story.id === storyId ? { ...story, sprint: null } : story
+        );
+      })
+      .addCase(removeStoryFromSprint.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to remove story from sprint';
       });
   },
 });
