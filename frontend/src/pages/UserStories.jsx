@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
-import { fetchStories, removeStoryFromSprint } from '../store/slices/storySlice';
+import { fetchStories, removeStoryFromSprint, updateStory, fetchBacklogStories } from '../store/slices/storySlice';
 import { useDispatch, useSelector } from 'react-redux';
 import AddUserStory from './AddUserStory';
 import UserStoryColumn from './UserStoryColumn'; // Import the new component
+import AddStoryFromBacklog from './AddStoryFromBacklog'; 
 import './UserStories.css';
 
 const UserStories = () => {
@@ -16,10 +17,11 @@ const UserStories = () => {
   const [selectedStory, setSelectedStory] = useState(null);
   const [expandedStoryId, setExpandedStoryId] = useState(null);
   const dispatch = useDispatch();
-  const { stories } = useSelector((state) => state.stories);
-
+  const { stories, backlogStories } = useSelector((state) => state.stories);
+  
   useEffect(() => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
+    dispatch(fetchBacklogStories()); // Fetch backlog stories
   }, [projectId, sprintId]);
 
   const handleUserStoryAdded = (newStory) => {
@@ -40,8 +42,24 @@ const UserStories = () => {
     try {
       await dispatch(removeStoryFromSprint({ storyId })).unwrap();
       dispatch(fetchStories({ projectId, sprintId })); // Re-fetch stories
+      dispatch(fetchBacklogStories()); // Re-fetch backlog stories
     } catch (err) {
       setError('Failed to remove story from sprint.');
+    }
+  };
+
+  const [showBacklogModal, setShowBacklogModal] = useState(false); // Assuming backlog stories are in the Redux store
+
+  const handleAddStoryToSprint = async (story) => {
+    try {
+      const updatedStory = { ...story, sprint: sprintId };
+      const storyId = story.id;
+      // Dispatch an action to add the story to the sprint
+      await dispatch(updateStory({ storyId: storyId, storyData: updatedStory }));
+      dispatch(fetchStories({ projectId, sprintId })); // Re-fetch stories
+      dispatch(fetchBacklogStories()); // Re-fetch backlog stories
+    } catch (err) {
+      setError('Failed to add story to sprint.');
     }
   };
 
@@ -52,7 +70,7 @@ const UserStories = () => {
   );
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center">
+      <div className="d-flex justify-content-between align-items-right">
         <h1>User Stories for Sprint {sprintId}</h1>
         <Button
           variant="primary"
@@ -62,7 +80,12 @@ const UserStories = () => {
             setShowModal(true);
           }}
         >
-          Add New User Story
+          Create New User Story
+        </Button>
+        <Button
+        variant="primary"
+        onClick={() => setShowBacklogModal(true)}>
+        Add Story From Backlog
         </Button>
       </div>
       <p>Project ID: {projectId}</p>
@@ -88,6 +111,12 @@ const UserStories = () => {
         onUserStoryAdded={handleUserStoryAdded}
         userStoryData={selectedStory}
         isEditMode={isEditMode}
+      />
+      <AddStoryFromBacklog
+        show={showBacklogModal}
+        handleClose={() => setShowBacklogModal(false)}
+        backlogStories={backlogStories}
+        onAddToSprint={handleAddStoryToSprint}
       />
     </div>
   );

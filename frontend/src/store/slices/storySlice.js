@@ -30,12 +30,24 @@ export const fetchStories = createAsyncThunk(
 
 export const fetchBacklogStories = createAsyncThunk(
   'stories/fetchBacklogStories',
-  async (projectId, { rejectWithValue }) => {
+  async ( _ , { rejectWithValue, getState }) => {
     try {
-      const response = await axios.get(`${API_URL}/projects/${projectId}/backlog/`);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/backlog/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
       return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response.data);
+    } catch (err) {
+      rejectWithValue(err.response.data);
     }
   }
 );
@@ -70,6 +82,7 @@ export const updateStory = createAsyncThunk(
   'stories/updateStory',
   async ({ storyId, storyData }, { rejectWithValue, getState }) => {
     try {
+      console.log('Updating story with ID:', storyId, 'and data:', storyData);
       const { auth } = getState();
       const token = auth.token;
 

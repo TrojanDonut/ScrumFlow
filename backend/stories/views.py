@@ -55,6 +55,17 @@ class RemoveStoryFromSprintView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+class UserStoryBacklogView(generics.ListAPIView):
+    """API view for listing user stories in the backlog."""
+    serializer_class = UserStorySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Return all user stories in the backlog."""
+        return UserStory.objects.filter(sprint=None)
+
+
 class UserStoryCommentListCreateView(generics.ListCreateAPIView):
     """API view for listing and creating comments on user stories."""
     # serializer_class = UserStoryCommentSerializer
@@ -91,18 +102,6 @@ class SprintStoriesView(views.APIView):
                 {"error": "Failed to fetch stories for the sprint."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-
-class ProductBacklogView(views.APIView):
-    """API view for managing the product backlog."""
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        """Get method is not implemented yet."""
-        return Response(
-            {"message": "Not implemented yet"},
-            status=status.HTTP_501_NOT_IMPLEMENTED
-        )
 
 
 class StoryEstimateView(views.APIView):
