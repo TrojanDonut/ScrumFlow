@@ -113,20 +113,18 @@ class Command(BaseCommand):
 
             # Create initial user stories
             try:
-                project = Project.objects.get(name='Sample Project')
                 created_by_user = User.objects.get(username='product_owner')
 
                 if not UserStory.objects.filter(
                     name='Initial User Story'
                 ).exists():
                     user_story = UserStory.objects.create(
-                        project=project,
                         sprint=None,
                         name='Initial User Story',
-                        description=(
+                        text=(
                             'This is an initial user story for testing.'
                         ),
-                        acceptance_criteria=(
+                        acceptance_tests=(
                             'Acceptance criteria for the initial user story.'
                         ),
                         priority=UserStory.Priority.SHOULD_HAVE,

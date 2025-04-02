@@ -8,7 +8,6 @@ export const fetchSprints = createAsyncThunk(
   'sprints/fetchSprints',
   async (projectId, { rejectWithValue, getState }) => {
     try {
-      console.log(projectId);
       const { auth } = getState();
       const token = auth.token;
 

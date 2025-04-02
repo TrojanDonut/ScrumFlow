@@ -1,6 +1,7 @@
 from rest_framework import generics, status, views, viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 from .models import UserStory
 from .serializers import UserStorySerializer
 import logging
@@ -15,9 +16,8 @@ class UserStoryListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Return stories for a specific project."""
-        project_id = self.kwargs['project_id']
-        return UserStory.objects.filter(project_id=project_id)
+        """Return all user stories."""
+        return UserStory.objects.all()
 
     def create(self, request, *args, **kwargs):
         """Create a new user story and set the created_by field."""
@@ -39,6 +39,31 @@ class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
             {"message": "Not implemented yet"},
             status=status.HTTP_501_NOT_IMPLEMENTED
         )
+
+class RemoveStoryFromSprintView(APIView):
+    """API view for removing a story from a sprint."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, story_id, *args, **kwargs):
+        try:
+            story = UserStory.objects.get(id=story_id)
+            story.sprint = None
+            story.save()
+            return Response({"message": "Story removed from sprint successfully."}, status=status.HTTP_200_OK)
+        except UserStory.DoesNotExist:
+            return Response({"error": "Story not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserStoryBacklogView(generics.ListAPIView):
+    """API view for listing user stories in the backlog."""
+    serializer_class = UserStorySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Return all user stories in the backlog."""
+        return UserStory.objects.filter(sprint=None)
 
 
 class UserStoryCommentListCreateView(generics.ListCreateAPIView):
@@ -65,24 +90,18 @@ class SprintStoriesView(views.APIView):
     """API view for managing stories in a sprint."""
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
-        """Get method is not implemented yet."""
-        return Response(
-            {"message": "Not implemented yet"},
-            status=status.HTTP_501_NOT_IMPLEMENTED
-        )
-
-
-class ProductBacklogView(views.APIView):
-    """API view for managing the product backlog."""
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        """Get method is not implemented yet."""
-        return Response(
-            {"message": "Not implemented yet"},
-            status=status.HTTP_501_NOT_IMPLEMENTED
-        )
+    def get(self, request, sprint_id, *args, **kwargs):
+        """Retrieve all user stories for a specific sprint."""
+        try:
+            stories = UserStory.objects.filter(sprint_id=sprint_id)
+            serializer = UserStorySerializer(stories, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error fetching stories for sprint {sprint_id}: {e}")
+            return Response(
+                {"error": "Failed to fetch stories for the sprint."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class StoryEstimateView(views.APIView):

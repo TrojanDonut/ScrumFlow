@@ -6,8 +6,8 @@ class UserStoryCommentInline(admin.TabularInline):
     extra = 1
 
 class UserStoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'project', 'sprint', 'priority', 'status', 'business_value', 'story_points')
-    list_filter = ('project', 'sprint', 'priority', 'status')
+    list_display = ('name', 'sprint', 'priority', 'status', 'business_value', 'story_points')
+    list_filter = ('sprint', 'priority', 'status')
     search_fields = ('title', 'description')
     inlines = [UserStoryCommentInline]
 

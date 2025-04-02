@@ -106,7 +106,6 @@ export const updateProject = createAsyncThunk(
     try {
       const { auth } = getState();
       const token = auth.token;
-      console.log({id, projectData});
       if (!token) {
         throw new Error('No token found');
       }
@@ -344,7 +343,6 @@ const projectSlice = createSlice({
       )
       .addCase(updateProjectMemberRole.fulfilled, (state, action) => {
         state.loading = false;
-        console.log(action.payload);
         const index = state.currentProject.members.findIndex(member => member.id === action.payload.id);
         if (index !== -1) {
           state.currentProject.members[index] = action.payload;
