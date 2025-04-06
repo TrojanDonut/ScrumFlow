@@ -36,8 +36,8 @@ class Sprint(models.Model):
                     "Please select a valid date range."
                 )
 
-            # Check that start date is not in the past
-            if self.start_date < timezone.now().date():
+            # Check that start date is not in the past (only for new sprints)
+            if not self.pk and self.start_date < timezone.now().date():
                 raise ValidationError(
                     "The start date cannot be in the past. "
                     "Please select a future date."

@@ -26,25 +26,25 @@ class SprintSerializer(serializers.ModelSerializer):
                 "Please select a valid date range."
             )
 
-        # Check that start date is not in the past
-        if start_date and start_date < timezone.now().date():
+        # Check that start date is not in the past (only for new sprints)
+        if self.instance is None and start_date and start_date < timezone.now().date():
             raise serializers.ValidationError(
                 "The start date cannot be in the past. "
                 "Please select a future date."
             )
 
         # Check that velocity is positive
-        if data['velocity'] <= 0:
+        if velocity <= 0:
             raise serializers.ValidationError("Velocity must be greater than 0.")
 
         # Check that velocity is under 100
-        if data['velocity'] > 100:
+        if velocity > 100:
             raise serializers.ValidationError("Velocity must be less than or equal to 100.")
 
         # Check if start_date or end_date falls on a weekend
-        if data['start_date'].weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
+        if start_date and start_date.weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
             raise serializers.ValidationError("Start date cannot be on a weekend.")
-        if data['end_date'].weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
+        if end_date and end_date.weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
             raise serializers.ValidationError("End date cannot be on a weekend.")
 
         return data

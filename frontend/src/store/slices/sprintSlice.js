@@ -78,9 +78,63 @@ export const createSprint = createAsyncThunk(
   }
 );
 
+export const fetchSprintById = createAsyncThunk(
+  'sprints/fetchSprintById',
+  async ({ projectId, sprintId }, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/projects/${projectId}/sprints/${sprintId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+export const updateSprint = createAsyncThunk(
+  'sprints/updateSprint',
+  async ({ projectId, sprintId, sprintData }, { rejectWithValue, getState }) => {
+    try {
+      console.log('Updating sprint with data:', sprintData);
+
+      const { auth } = getState();
+      const token = auth.token;
+      if (!token) {
+        throw new Error('No token found');
+      }
+      const response = await axios.put(
+        `${API_URL}/projects/${projectId}/sprints/${sprintId}/`,
+        sprintData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating sprint:', error);
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
 const initialState = {
   sprints: [],
-  activeSprint: null,
+  currentSprint: null,
   loading: false,
   error: null,
 };
@@ -135,7 +189,21 @@ const sprintSlice = createSlice({
       .addCase(createSprint.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to create sprint';
-      });
+      })
+      // Fetch sprint by ID reducers
+      .addCase(fetchSprintById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchSprintById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentSprint = action.payload;
+      })
+      .addCase(fetchSprintById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = 'Failed to fetch sprint by ID';
+      })
+      ;
   },
 });
 
