@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
 import { fetchStories, removeStoryFromSprint, updateStory, fetchBacklogStories } from '../store/slices/storySlice';
+import { fetchSprintById } from '../store/slices/sprintSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import AddUserStory from './AddUserStory';
 import UserStoryColumn from './UserStoryColumn'; // Import the new component
 import AddStoryFromBacklog from './AddStoryFromBacklog'; 
+import SprintEditModal from './SprintEditModal'; // Assuming you have a SprintEditModal component
 import './UserStories.css';
 
 const UserStories = () => {
@@ -16,12 +18,16 @@ const UserStories = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedStory, setSelectedStory] = useState(null);
   const [expandedStoryId, setExpandedStoryId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const dispatch = useDispatch();
   const { stories, backlogStories } = useSelector((state) => state.stories);
+  const { loading, error: sprintError, currentSprint } = useSelector((state) => state.sprints);
+  
   
   useEffect(() => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
     dispatch(fetchBacklogStories()); // Fetch backlog stories
+    dispatch(fetchSprintById({ projectId: projectId, sprintId: sprintId }));
   }, [projectId, sprintId]);
 
   const handleUserStoryAdded = (newStory) => {
@@ -68,58 +74,82 @@ const UserStories = () => {
   const categorizedStories = states.map((state) =>
     stories.filter((story) => story.status === state)
   );
-  return (
-    <div>
-      <div className="d-flex justify-content-between align-items-right">
-        <h1>User Stories for Sprint {sprintId}</h1>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setSelectedStory(null);
-            setIsEditMode(false);
-            setShowModal(true);
-          }}
-        >
-          Create New User Story
-        </Button>
-        <Button
-        variant="primary"
-        onClick={() => setShowBacklogModal(true)}>
-        Add Story From Backlog
-        </Button>
-      </div>
-      <p>Project ID: {projectId}</p>
-      {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
-      <div className="row">
-        {states.map((state, index) => (
-          <UserStoryColumn
-            key={state}
-            title={state}
-            stories={categorizedStories[index]}
-            onEdit={handleEditStory}
-            onToggleExpand={toggleExpandStory}
-            expandedStoryId={expandedStoryId}
-            onRemoveFromSprint={handleRemoveFromSprint}
-          />
-        ))}
-      </div>
 
-      {/* AddUserStory Modal */}
-      <AddUserStory
-        show={showModal}
-        handleClose={() => setShowModal(false)}
-        onUserStoryAdded={handleUserStoryAdded}
-        userStoryData={selectedStory}
-        isEditMode={isEditMode}
-      />
-      <AddStoryFromBacklog
-        show={showBacklogModal}
-        handleClose={() => setShowBacklogModal(false)}
-        backlogStories={backlogStories}
-        onAddToSprint={handleAddStoryToSprint}
-      />
+  if (loading && currentSprint === null) {
+    return <div>Loading...</div>;
+  }
+  return (
+  <div>
+    <div className="d-flex justify-content-between align-items-center">
+      <h1>User Stories for Sprint</h1>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          setShowEditModal(true);
+        }}
+      >
+        Edit Sprint
+      </Button>
     </div>
-  );
-};
+    <div className="d-flex align-items-start mt-3">
+      <Button
+        variant="primary"
+        className="me-2"
+        onClick={() => {
+          setSelectedStory(null);
+          setIsEditMode(false);
+          setShowModal(true);
+        }}
+      >
+        Create New User Story
+      </Button>
+      <Button
+        variant="primary"
+        onClick={() => setShowBacklogModal(true)}
+      >
+        Add Story From Backlog
+      </Button>
+    </div>
+    {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
+    <div className="row">
+      {states.map((state, index) => (
+        <UserStoryColumn
+          key={state}
+          title={state}
+          stories={categorizedStories[index]}
+          onEdit={handleEditStory}
+          onToggleExpand={toggleExpandStory}
+          expandedStoryId={expandedStoryId}
+          onRemoveFromSprint={handleRemoveFromSprint}
+        />
+      ))}
+    </div>
+
+    {/* AddUserStory Modal */}
+    <AddUserStory
+      show={showModal}
+      handleClose={() => setShowModal(false)}
+      onUserStoryAdded={handleUserStoryAdded}
+      userStoryData={selectedStory}
+      isEditMode={isEditMode}
+    />
+    <AddStoryFromBacklog
+      show={showBacklogModal}
+      handleClose={() => setShowBacklogModal(false)}
+      backlogStories={backlogStories}
+      onAddToSprint={handleAddStoryToSprint}
+    />
+
+    {/* SprintEditModal */}
+    <SprintEditModal
+      show={showEditModal}
+      handleClose={() => setShowEditModal(false)}
+      sprintId={sprintId}
+      projectId={projectId}
+      sprintData={currentSprint}
+    />
+  </div>
+);
+}
 
 export default UserStories;
