@@ -24,6 +24,10 @@ class Project(models.Model):
         # Ensure product_owner and scrum_master are not the same user
         if self.product_owner == self.scrum_master:
             raise ValidationError("Product Owner and Scrum Master cannot be the same user.")
+        
+        # Check for case-insensitive uniqueness of the project name
+        if Project.objects.filter(name__iexact=self.name).exclude(id=self.id).exists():
+            raise ValidationError("A project with this name already exists (case-insensitive).")
 
     def save(self, *args, **kwargs):
         self.clean()
