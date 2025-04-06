@@ -281,7 +281,7 @@ const projectSlice = createSlice({
       })
       .addCase(createProject.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to create project';
+        state.error = 'Failed to create project';
       })
       .addCase(fetchAllUsers.pending, (state) => {
         state.loading = true;
@@ -334,7 +334,7 @@ const projectSlice = createSlice({
       })
       .addCase(updateProject.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to update project';
+        state.error = 'Failed to update project';
       })
       .addCase(updateProjectMemberRole.pending, (state) => {
         state.loading = true;

@@ -19,8 +19,8 @@ const CreateProject = () => {
   });
 
   useEffect(() => {
-    dispatch(fetchUsers()); // Fetch users when the component mounts
-  }, [dispatch]);
+    dispatch(fetchUsers(true)); // Fetch users when the component mounts
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -37,6 +37,17 @@ const CreateProject = () => {
       navigate('/projects');
     }
   };
+
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center mt-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>
+    );
+  }
 
   return (
     <div className="d-flex justify-content-center mt-5">
@@ -78,7 +89,7 @@ const CreateProject = () => {
               required
             >
               <option value="">Select a Product Owner</option>
-              {members.map(user => (
+              {users.map(user => (
                 <option key={user.id} value={user.id}>{user.username}</option>
               ))}
             </Form.Control>
@@ -93,7 +104,7 @@ const CreateProject = () => {
               required
             >
               <option value="">Select a Scrum Master</option>
-              {members.map(user => (
+              {users.map(user => (
                 <option key={user.id} value={user.id}>{user.username}</option>
               ))}
             </Form.Control>

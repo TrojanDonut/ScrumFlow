@@ -24,8 +24,8 @@ const EditProject = () => {
       setFormData({
         name: currentProject.name,
         description: currentProject.description,
-        productOwner: currentProject.product_owner || '',
-        scrumMaster: currentProject.scrum_master || '',
+        product_owner: currentProject.product_owner || '',
+        scrum_master: currentProject.scrum_master || '',
       });
     }
   }, [currentProject]);
@@ -34,10 +34,12 @@ const EditProject = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(updateProject({ id, projectData: formData }));
-    navigate(`/projects/${id}`);
+    const result = await dispatch(updateProject({ id, projectData: formData }));
+    if (updateProject.fulfilled.match(result)) {
+      navigate(`/projects/${id}`);
+    }
   };
 
   if (loading) {
@@ -55,6 +57,11 @@ const EditProject = () => {
   return (
     <div>
       <h1>Edit Project</h1>
+        {error && (
+          <Alert variant="danger" onClose={() => dispatch(clearProjectError())} dismissible>
+            {formatErrorMessage(error)}
+          </Alert>
+        )}
       <Form onSubmit={handleSubmit}>
         <Form.Group controlId="formProjectName" className="mb-4">
           <Form.Label>Project Name</Form.Label>
@@ -82,8 +89,8 @@ const EditProject = () => {
           <Form.Label>Product Owner</Form.Label>
           <Form.Control
             as="select"
-            name="productOwner"
-            value={formData.productOwner}
+            name="product_owner"
+            value={formData.product_owner}
             onChange={handleChange}
             required
           >
@@ -100,8 +107,8 @@ const EditProject = () => {
           <Form.Label>Scrum Master</Form.Label>
           <Form.Control
             as="select"
-            name="scrumMaster"
-            value={formData.scrumMaster}
+            name="scrum_master"
+            value={formData.scrum_master}
             onChange={handleChange}
             required
           >
@@ -113,12 +120,6 @@ const EditProject = () => {
             ))}
           </Form.Control>
         </Form.Group>
-
-        {error && (
-          <Alert variant="danger" onClose={() => dispatch(clearProjectError())} dismissible>
-            {formatErrorMessage(error)}
-          </Alert>
-        )}
 
         <AssignedUsersList projectId={id} />
         <Button variant="primary" type="submit">
