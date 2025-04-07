@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Button, ListGroup } from 'react-bootstrap';
+import { Modal, Button, ListGroup, Tab, Nav } from 'react-bootstrap';
 
 const AddStoryFromBacklog = ({ show, handleClose, backlogStories, onAddToSprint }) => {
   const [selectedStory, setSelectedStory] = useState(null);
@@ -11,24 +11,31 @@ const AddStoryFromBacklog = ({ show, handleClose, backlogStories, onAddToSprint 
     }
   };
 
+  // Extract unactive stories (those not in a sprint) from the new data structure
+  const unactiveStories = backlogStories?.unrealized?.unactive || [];
+
   return (
     <Modal show={show} onHide={handleClose}>
       <Modal.Header closeButton>
         <Modal.Title>Add Story From Backlog</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <ListGroup>
-          {backlogStories.map((story) => (
-            <ListGroup.Item
-              key={story.id}
-              active={selectedStory === story}
-              onClick={() => setSelectedStory(story)}
-              style={{ cursor: 'pointer' }}
-            >
-              {story.name}
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
+        {unactiveStories.length === 0 ? (
+          <p>No available stories in the backlog. Create a new story or add stories to the project backlog first.</p>
+        ) : (
+          <ListGroup>
+            {unactiveStories.map((story) => (
+              <ListGroup.Item
+                key={story.id}
+                active={selectedStory === story}
+                onClick={() => setSelectedStory(story)}
+                style={{ cursor: 'pointer' }}
+              >
+                {story.name}
+              </ListGroup.Item>
+            ))}
+          </ListGroup>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={handleClose}>

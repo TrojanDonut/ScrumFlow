@@ -153,7 +153,13 @@ export const removeStoryFromSprint = createAsyncThunk(
 
 const initialState = {
   stories: [],
-  backlogStories: [],
+  backlogStories: {
+    realized: [],
+    unrealized: {
+      active: [],
+      unactive: []
+    }
+  },
   loading: false,
   error: null,
 };
@@ -166,7 +172,13 @@ const storySlice = createSlice({
       state.error = null;
     },
     resetBacklogStories: (state) => {
-      state.backlogStories = [];
+      state.backlogStories = {
+        realized: [],
+        unrealized: {
+          active: [],
+          unactive: []
+        }
+      };
     },
   },
   extraReducers: (builder) => {
@@ -192,6 +204,7 @@ const storySlice = createSlice({
       })
       .addCase(fetchBacklogStories.fulfilled, (state, action) => {
         state.loading = false;
+        // The API now returns a structured object, not an array
         state.backlogStories = action.payload;
       })
       .addCase(fetchBacklogStories.rejected, (state, action) => {
@@ -207,21 +220,29 @@ const storySlice = createSlice({
       .addCase(createStory.fulfilled, (state, action) => {
         state.loading = false;
         console.log('Story created, payload:', action.payload);
-        console.log('Current backlogStories:', state.backlogStories);
         
-        // If the story doesn't have a sprint assigned, add it to backlogStories
-        if (!action.payload.sprint) {
-          // Check if story already exists in backlogStories
-          const exists = state.backlogStories.some(story => story.id === action.payload.id);
-          if (!exists) {
-            state.backlogStories = [...state.backlogStories, action.payload];
-          }
-          console.log('Updated backlogStories:', state.backlogStories);
+        // Handle adding the new story to the appropriate category
+        const newStory = action.payload;
+        
+        if (newStory.status === 'ACCEPTED') {
+          // Add to realized stories
+          state.backlogStories.realized.push(newStory);
         } else {
-          // Check if story already exists in stories
-          const exists = state.stories.some(story => story.id === action.payload.id);
+          // Add to unrealized stories
+          if (newStory.sprint) {
+            // Add to active stories
+            state.backlogStories.unrealized.active.push(newStory);
+          } else {
+            // Add to unactive stories
+            state.backlogStories.unrealized.unactive.push(newStory);
+          }
+        }
+        
+        // If it has a sprint, also add to sprint stories
+        if (newStory.sprint) {
+          const exists = state.stories.some(story => story.id === newStory.id);
           if (!exists) {
-            state.stories = [...state.stories, action.payload];
+            state.stories.push(newStory);
           }
         }
       })
@@ -235,9 +256,33 @@ const storySlice = createSlice({
       })
       .addCase(updateStory.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.stories.findIndex(story => story.id === action.payload.id);
-        if (index !== -1) {
-          state.stories[index] = action.payload;
+        const updatedStory = action.payload;
+        
+        // Update in sprint stories list if applicable
+        const sprintIndex = state.stories.findIndex(story => story.id === updatedStory.id);
+        if (sprintIndex !== -1) {
+          state.stories[sprintIndex] = updatedStory;
+        }
+        
+        // Update in the appropriate backlog category
+        // First, remove the story from all categories
+        state.backlogStories.realized = state.backlogStories.realized.filter(
+          story => story.id !== updatedStory.id
+        );
+        state.backlogStories.unrealized.active = state.backlogStories.unrealized.active.filter(
+          story => story.id !== updatedStory.id
+        );
+        state.backlogStories.unrealized.unactive = state.backlogStories.unrealized.unactive.filter(
+          story => story.id !== updatedStory.id
+        );
+        
+        // Then add to the appropriate category
+        if (updatedStory.status === 'ACCEPTED') {
+          state.backlogStories.realized.push(updatedStory);
+        } else if (updatedStory.sprint) {
+          state.backlogStories.unrealized.active.push(updatedStory);
+        } else {
+          state.backlogStories.unrealized.unactive.push(updatedStory);
         }
       })
       .addCase(updateStory.rejected, (state, action) => {
@@ -251,9 +296,26 @@ const storySlice = createSlice({
       .addCase(removeStoryFromSprint.fulfilled, (state, action) => {
         state.loading = false;
         const storyId = action.meta.arg.storyId;
+        
+        // Update the story in sprint stories
         state.stories = state.stories.map(story =>
           story.id === storyId ? { ...story, sprint: null } : story
         );
+        
+        // Update in backlog categories
+        // Find the story in active stories
+        const storyIndex = state.backlogStories.unrealized.active.findIndex(
+          story => story.id === storyId
+        );
+        
+        if (storyIndex !== -1) {
+          // Remove from active stories
+          const updatedStory = {...state.backlogStories.unrealized.active[storyIndex], sprint: null};
+          state.backlogStories.unrealized.active.splice(storyIndex, 1);
+          
+          // Add to unactive stories
+          state.backlogStories.unrealized.unactive.push(updatedStory);
+        }
       })
       .addCase(removeStoryFromSprint.rejected, (state, action) => {
         state.loading = false;

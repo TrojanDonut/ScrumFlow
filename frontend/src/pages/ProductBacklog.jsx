@@ -11,7 +11,9 @@ import {
   Alert, 
   Spinner, 
   Accordion,
-  Badge
+  Badge,
+  Tab,
+  Nav
 } from 'react-bootstrap';
 import { fetchBacklogStories, fetchStories, resetBacklogStories } from '../store/slices/storySlice';
 import { fetchProjectById } from '../store/slices/projectSlice';
@@ -58,30 +60,6 @@ const ProductBacklog = () => {
     setShowModal(true);
   };
 
-  // Group stories by priority
-  const priorityGroups = backlogStories && id ? {
-    'MUST_HAVE': backlogStories
-      .filter(story => story.priority === 'MUST_HAVE')
-      .sort((a, b) => b.business_value - a.business_value),
-    'SHOULD_HAVE': backlogStories
-      .filter(story => story.priority === 'SHOULD_HAVE')
-      .sort((a, b) => b.business_value - a.business_value),
-    'COULD_HAVE': backlogStories
-      .filter(story => story.priority === 'COULD_HAVE')
-      .sort((a, b) => b.business_value - a.business_value),
-    'WONT_HAVE': backlogStories
-      .filter(story => story.priority === 'WONT_HAVE')
-      .sort((a, b) => b.business_value - a.business_value)
-  } : {
-    'MUST_HAVE': [],
-    'SHOULD_HAVE': [],
-    'COULD_HAVE': [],
-    'WONT_HAVE': []
-  };
-
-  console.log('Current backlogStories:', backlogStories);
-  console.log('Grouped stories:', priorityGroups);
-
   const getPriorityBadgeVariant = (priority) => {
     switch (priority) {
       case 'MUST_HAVE':
@@ -122,6 +100,89 @@ const ProductBacklog = () => {
     return <Alert variant="danger">{errorMessage}</Alert>;
   };
 
+  // Function to render a list of user stories
+  const renderUserStoryList = (stories) => {
+    if (!stories || stories.length === 0) {
+      return (
+        <ListGroup.Item className="text-muted">
+          No stories in this category
+        </ListGroup.Item>
+      );
+    }
+
+    // Group stories by priority
+    const priorityGroups = {
+      'MUST_HAVE': stories.filter(s => s.priority === 'MUST_HAVE').sort((a, b) => b.business_value - a.business_value),
+      'SHOULD_HAVE': stories.filter(s => s.priority === 'SHOULD_HAVE').sort((a, b) => b.business_value - a.business_value),
+      'COULD_HAVE': stories.filter(s => s.priority === 'COULD_HAVE').sort((a, b) => b.business_value - a.business_value),
+      'WONT_HAVE': stories.filter(s => s.priority === 'WONT_HAVE').sort((a, b) => b.business_value - a.business_value)
+    };
+
+    return (
+      <>
+        {Object.keys(priorityGroups).map(priority => (
+          <Card key={priority} className="mb-3">
+            <Card.Header className="d-flex justify-content-between align-items-center">
+              <span>
+                <Badge bg={getPriorityBadgeVariant(priority)} className="me-2">
+                  {formatPriorityLabel(priority)}
+                </Badge>
+                <span className="fw-bold">
+                  {priorityGroups[priority].length} {priorityGroups[priority].length === 1 ? 'story' : 'stories'}
+                </span>
+              </span>
+            </Card.Header>
+            <ListGroup variant="flush">
+              {priorityGroups[priority].map(story => (
+                <ListGroup.Item 
+                  key={story.id}
+                  className="d-flex justify-content-between align-items-center"
+                >
+                  <div>
+                    <h6>{story.name}</h6>
+                    <small>Business Value: {story.business_value}</small>
+                    {story.story_points && (
+                      <small className="ms-3">Story Points: {story.story_points}</small>
+                    )}
+                    {story.sprint && (
+                      <Badge bg="info" className="ms-3">In Sprint</Badge>
+                    )}
+                    <Badge bg={story.status === 'ACCEPTED' ? 'success' : 'secondary'} className="ms-3">
+                      {story.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Button 
+                      variant="outline-primary" 
+                      size="sm" 
+                      className="me-2"
+                      onClick={() => handleEditStory(story)}
+                    >
+                      Edit
+                    </Button>
+                    <Button 
+                      variant="outline-info" 
+                      size="sm" 
+                      as={Link} 
+                      to={`/projects/${id}/user-stories/${story.id}`}
+                    >
+                      Details
+                    </Button>
+                  </div>
+                </ListGroup.Item>
+              ))}
+              {priorityGroups[priority].length === 0 && (
+                <ListGroup.Item className="text-muted">
+                  No stories with this priority
+                </ListGroup.Item>
+              )}
+            </ListGroup>
+          </Card>
+        ))}
+      </>
+    );
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center mt-5">
@@ -131,6 +192,12 @@ const ProductBacklog = () => {
       </div>
     );
   }
+
+  // Check if backlogStories is empty or not in the expected format
+  const hasStories = backlogStories && 
+                    (backlogStories.realized?.length > 0 || 
+                     backlogStories.unrealized?.active?.length > 0 ||
+                     backlogStories.unrealized?.unactive?.length > 0);
 
   return (
     <Container>
@@ -149,7 +216,7 @@ const ProductBacklog = () => {
 
       {renderError()}
 
-      {!backlogStories || backlogStories.length === 0 ? (
+      {!hasStories ? (
         <Alert variant="info">
           No stories in the backlog. Click "Add New User Story" to create one.
         </Alert>
@@ -157,66 +224,54 @@ const ProductBacklog = () => {
         <div>
           <Card className="mb-4">
             <Card.Header>
-              <h5 className="mb-0">Prioritized Product Backlog</h5>
+              <h5 className="mb-0">Product Backlog</h5>
             </Card.Header>
             <Card.Body>
-              <p>This page displays all user stories that are not assigned to any sprint, organized by their priority level.</p>
+              <p>This page displays all user stories for the project, organized by their status and priority level.</p>
             </Card.Body>
           </Card>
 
-          {Object.keys(priorityGroups).map(priority => (
-            <Card key={priority} className="mb-3">
-              <Card.Header className="d-flex justify-content-between align-items-center">
-                <span>
-                  <Badge bg={getPriorityBadgeVariant(priority)} className="me-2">
-                    {formatPriorityLabel(priority)}
-                  </Badge>
-                  <span className="fw-bold">
-                    {priorityGroups[priority].length} {priorityGroups[priority].length === 1 ? 'story' : 'stories'}
-                  </span>
-                </span>
-              </Card.Header>
-              <ListGroup variant="flush">
-                {priorityGroups[priority].map(story => (
-                  <ListGroup.Item 
-                    key={story.id}
-                    className="d-flex justify-content-between align-items-center"
-                  >
-                    <div>
-                      <h6>{story.name}</h6>
-                      <small>Business Value: {story.business_value}</small>
-                      {story.story_points && (
-                        <small className="ms-3">Story Points: {story.story_points}</small>
-                      )}
-                    </div>
-                    <div>
-                      <Button 
-                        variant="outline-primary" 
-                        size="sm" 
-                        className="me-2"
-                        onClick={() => handleEditStory(story)}
-                      >
-                        Edit
-                      </Button>
-                      <Button 
-                        variant="outline-info" 
-                        size="sm" 
-                        as={Link} 
-                        to={`/projects/${id}/user-stories/${story.id}`}
-                      >
-                        Details
-                      </Button>
-                    </div>
-                  </ListGroup.Item>
-                ))}
-                {priorityGroups[priority].length === 0 && (
-                  <ListGroup.Item className="text-muted">
-                    No stories with this priority
-                  </ListGroup.Item>
-                )}
-              </ListGroup>
-            </Card>
-          ))}
+          <Tab.Container id="backlog-tabs" defaultActiveKey="unrealized">
+            <Nav variant="tabs" className="mb-3">
+              <Nav.Item>
+                <Nav.Link eventKey="unrealized">Unrealized Stories</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="realized">Realized Stories</Nav.Link>
+              </Nav.Item>
+            </Nav>
+
+            <Tab.Content>
+              <Tab.Pane eventKey="unrealized">
+                <Tab.Container id="unrealized-tabs" defaultActiveKey="unactive">
+                  <Nav variant="pills" className="mb-3">
+                    <Nav.Item>
+                      <Nav.Link eventKey="unactive">Unassigned</Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey="active">In Sprint</Nav.Link>
+                    </Nav.Item>
+                  </Nav>
+
+                  <Tab.Content>
+                    <Tab.Pane eventKey="unactive">
+                      <h4 className="mb-3">Unassigned User Stories</h4>
+                      {renderUserStoryList(backlogStories.unrealized?.unactive || [])}
+                    </Tab.Pane>
+                    <Tab.Pane eventKey="active">
+                      <h4 className="mb-3">User Stories In Sprint</h4>
+                      {renderUserStoryList(backlogStories.unrealized?.active || [])}
+                    </Tab.Pane>
+                  </Tab.Content>
+                </Tab.Container>
+              </Tab.Pane>
+
+              <Tab.Pane eventKey="realized">
+                <h4 className="mb-3">Realized User Stories</h4>
+                {renderUserStoryList(backlogStories.realized || [])}
+              </Tab.Pane>
+            </Tab.Content>
+          </Tab.Container>
         </div>
       )}
 

@@ -108,31 +108,41 @@ class ProjectBacklogView(generics.ListAPIView):
         project_id = self.kwargs.get('project_id')
         print(f"Fetching backlog stories for project {project_id}")
         
-        # First, get all stories for the project
+        # Get all stories for the project
         all_stories = UserStory.objects.filter(project_id=project_id)
         print(f"Total stories for project: {all_stories.count()}")
-        for story in all_stories:
-            print(f"Story {story.id}: {story.name}, Project: {story.project_id}, Sprint: {story.sprint_id}")
         
-        # Then filter for those without a sprint
-        stories = UserStory.objects.filter(
-            project_id=project_id,
-            sprint=None
-        ).order_by('priority', '-business_value')
-        
-        print(f"Found {stories.count()} stories in backlog (no sprint assigned)")
-        for story in stories:
-            print(f"Backlog Story: {story.name}, Priority: {story.priority}, Project: {story.project_id}")
-        
-        return stories
+        # No longer filtering out stories with sprints
+        # We're returning all stories now, categorization will be done in list()
+        return all_stories.order_by('priority', '-business_value')
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        data = serializer.data
-        print(f"Returning {len(data)} serialized stories")
-        print("Serialized data:", data)
-        return Response(data)
+        
+        # Categorizing stories according to the new requirements
+        stories = serializer.data
+        
+        # Divide stories into realized and unrealized
+        realized_stories = [story for story in stories if story['status'] == 'ACCEPTED']
+        unrealized_stories = [story for story in stories if story['status'] != 'ACCEPTED']
+        
+        # Divide unrealized stories into active (in a sprint) and unactive (not in a sprint)
+        active_stories = [story for story in unrealized_stories if story['sprint'] is not None]
+        unactive_stories = [story for story in unrealized_stories if story['sprint'] is None]
+        
+        # Prepare the response data structure
+        response_data = {
+            'realized': realized_stories,
+            'unrealized': {
+                'active': active_stories,
+                'unactive': unactive_stories
+            }
+        }
+        
+        print(f"Returning categorized stories: {len(realized_stories)} realized, {len(active_stories)} active unrealized, {len(unactive_stories)} unactive unrealized")
+        
+        return Response(response_data)
 
 
 class UserStoryCommentListCreateView(generics.ListCreateAPIView):

@@ -75,6 +75,11 @@ const UserStories = () => {
     stories.filter((story) => story.status === state)
   );
 
+  // Check if backlogStories is in the expected format and initialized
+  const backlogStoriesReady = backlogStories && 
+                             (typeof backlogStories === 'object') && 
+                             ('unrealized' in backlogStories);
+
   if (loading && currentSprint === null) {
     return <div>Loading...</div>;
   }
@@ -106,6 +111,7 @@ const UserStories = () => {
       <Button
         variant="primary"
         onClick={() => setShowBacklogModal(true)}
+        disabled={!backlogStoriesReady}
       >
         Add Story From Backlog
       </Button>
@@ -133,12 +139,14 @@ const UserStories = () => {
       userStoryData={selectedStory}
       isEditMode={isEditMode}
     />
-    <AddStoryFromBacklog
-      show={showBacklogModal}
-      handleClose={() => setShowBacklogModal(false)}
-      backlogStories={backlogStories}
-      onAddToSprint={handleAddStoryToSprint}
-    />
+    {backlogStoriesReady && (
+      <AddStoryFromBacklog
+        show={showBacklogModal}
+        handleClose={() => setShowBacklogModal(false)}
+        backlogStories={backlogStories}
+        onAddToSprint={handleAddStoryToSprint}
+      />
+    )}
 
     {/* SprintEditModal */}
     <SprintEditModal
