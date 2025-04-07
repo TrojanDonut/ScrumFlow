@@ -3,27 +3,34 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Button, Form, Alert, Modal } from 'react-bootstrap';
 import { useDispatch } from 'react-redux';
-import { updateStory, createStory, fetchStories } from '../store/slices/storySlice';
+import { updateStory, createStory, fetchStories, fetchBacklogStories } from '../store/slices/storySlice';
 
-const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEditMode }) => {
-  const { projectId, sprintId } = useParams();
+const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEditMode, projectId: propProjectId }) => {
+  // Allow projectId to be passed as prop (for ProductBacklog) or from URL params (for Sprint UserStories)
+  const params = useParams();
+  const projectId = propProjectId || params.projectId;
+  const sprintId = params.sprintId;
   const dispatch = useDispatch();
-  const defaultState = {
+  
+  // Move defaultState outside of the component or memoize it
+  const getDefaultState = () => ({
     name: '',
     text: '',
     acceptance_tests: '',
     priority: 'MUST_HAVE',
     business_value: '',
     status: 'NOT_STARTED',
-    sprint: sprintId,
+    sprint: sprintId || null, // If sprintId is undefined, set to null (for product backlog)
     story_points: 2
-  };
-  const [formData, setFormData] = useState(defaultState);
+  });
+  
+  const [formData, setFormData] = useState(getDefaultState());
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isEditMode && userStoryData) {
+      const defaultState = getDefaultState();
       setFormData({
         name: userStoryData.name || defaultState.name,
         text: userStoryData.text || defaultState.text,
@@ -32,12 +39,12 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
         business_value: userStoryData.business_value || defaultState.business_value,
         status: userStoryData.status || defaultState.status,
         sprint: userStoryData.sprint || defaultState.sprint,
-        story_points: 2
+        story_points: userStoryData.story_points || defaultState.story_points
       });
     } else {
-      setFormData(defaultState);
+      setFormData(getDefaultState());
     }
-  }, [isEditMode, userStoryData]);
+  }, [isEditMode, userStoryData, sprintId]); // Remove defaultState from dependencies
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -56,23 +63,51 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
 
     const formattedData = {
       ...formData,
-      sprint: parseInt(formData.sprint, 10),
+      sprint: formData.sprint ? parseInt(formData.sprint, 10) : null,
       business_value: parseInt(formData.business_value, 10),
-  };
+      story_points: parseInt(formData.story_points, 10),
+      project: projectId // Explicitly set the project ID
+    };
+
+    console.log('Submitting story with data:', formattedData);
+    console.log('Project ID:', projectId);
 
     try {
       if (isEditMode) {
-        // Update existing user story
         console.log('Updating user story:', formData);
-        dispatch(updateStory({ storyId: userStoryData.id, storyData: formattedData }));
+        await dispatch(updateStory({ storyId: userStoryData.id, storyData: formattedData })).unwrap();
       } else {
-        dispatch(createStory({ sprintId, storyData: formattedData }));
+        console.log('Creating new user story');
+        const result = await dispatch(createStory({ 
+          sprintId: null, // Explicitly set to null for backlog stories
+          storyData: formattedData,
+          projectId
+        })).unwrap();
+        console.log('Story created successfully:', result);
       }
-      dispatch(fetchStories({ projectId, sprintId }));
+      
+      // Refresh appropriate data based on context
+      if (sprintId) {
+        dispatch(fetchStories({ projectId, sprintId }));
+      }
+      
+      // Always refresh backlog stories for both contexts
+      if (projectId) {
+        dispatch(fetchBacklogStories(projectId));
+      }
+      
+      if (onUserStoryAdded) {
+        onUserStoryAdded();
+      }
+      
       handleClose(); // Close the modal after success
     } catch (err) {
       if (err.response && err.response.data) {
         setError(err.response.data.detail || 'An error occurred.');
+      } else if (typeof err === 'string') {
+        setError(err);
+      } else if (err.message) {
+        setError(err.message);
       } else {
         setError('An error occurred. Please try again.');
       }

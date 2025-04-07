@@ -70,10 +70,16 @@ const ProjectDetail = () => {
             <strong>Created:</strong> {new Date(currentProject.created_at).toLocaleDateString()}
           </div>
         </div>
-        {user?.user_type === 'ADMIN' && (
-        <Button variant="outline-primary" as={Link} to={`/projects/${id}/edit`}>
-          Edit Project
-        </Button>)}
+        <div>
+          {user?.user_type === 'ADMIN' && (
+            <Button variant="outline-primary" as={Link} to={`/projects/${id}/edit`} className="me-2">
+              Edit Project
+            </Button>
+          )}
+          <Button variant="outline-success" as={Link} to={`/projects/${id}/backlog`}>
+            View Product Backlog
+          </Button>
+        </div>
       </div>
       <Card className="mt-4">
         <Card.Body>

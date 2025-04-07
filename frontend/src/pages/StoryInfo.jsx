@@ -12,15 +12,18 @@ const StoryInfo = () => {
   useEffect(() => {
     const fetchStory = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/projects/${projectId}/sprints/${sprintId}/user-stories/${storyId}`);
+        // Always use the project story URL pattern
+        const url = `${process.env.REACT_APP_API_URL}/projects/${projectId}/user-stories/${storyId}/`;
+        console.log('Fetching story from URL:', url);
+        const response = await axios.get(url);
         setStory(response.data);
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching story:', err);
         setError('Failed to fetch story details.');
       }
     };
     fetchStory();
-  }, [projectId, sprintId, storyId]);
+  }, [projectId, storyId]);
 
   if (error) {
     return <Alert variant="danger">{error}</Alert>;

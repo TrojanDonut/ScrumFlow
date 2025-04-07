@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from sprints.models import Sprint
+from projects.models import Project
 
 
 class UserStory(models.Model):
@@ -19,6 +20,7 @@ class UserStory(models.Model):
         ACCEPTED = 'ACCEPTED', 'Accepted'
         REJECTED = 'REJECTED', 'Rejected'
 
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='stories', null=True, blank=True)
     sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE, related_name='user_stories', null=True, blank=True)
     name = models.CharField(max_length=255)
     text = models.TextField()
@@ -40,7 +42,7 @@ class UserStory(models.Model):
 
     class Meta:
         ordering = ['-priority', '-business_value']
-        unique_together = ['sprint', 'name']
+        unique_together = [['sprint', 'name'], ['project', 'name']]
         verbose_name_plural = 'User stories'
 
     def __str__(self):

@@ -23,15 +23,16 @@ export const fetchStories = createAsyncThunk(
       });
       return response.data;
     } catch (err) {
-      rejectWithValue(err.response.data);
+      return rejectWithValue(err.response?.data || 'Failed to fetch stories');
     }
   }
 );
 
 export const fetchBacklogStories = createAsyncThunk(
   'stories/fetchBacklogStories',
-  async ( _ , { rejectWithValue, getState }) => {
+  async (projectId, { rejectWithValue, getState }) => {
     try {
+      console.log('Fetching backlog stories for project:', projectId);
       const { auth } = getState();
       const token = auth.token;
 
@@ -39,22 +40,28 @@ export const fetchBacklogStories = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.get(`${API_URL}/backlog/`, {
+      const url = `${API_URL}/projects/${projectId}/backlog/`;
+      console.log('Making request to:', url);
+
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
         withCredentials: true,
       });
+
+      console.log('Backlog API response:', response.data);
       return response.data;
     } catch (err) {
-      rejectWithValue(err.response.data);
+      console.error('Error fetching backlog stories:', err.response?.data || err.message);
+      return rejectWithValue(err.response?.data || 'Failed to fetch backlog stories');
     }
   }
 );
 
 export const createStory = createAsyncThunk(
   'stories/createStory',
-  async ({ sprintId, storyData }, { rejectWithValue, getState }) => {
+  async ({ sprintId, storyData, projectId }, { rejectWithValue, getState }) => {
     try {
       console.log('Creating story with data:', storyData);
       const { auth } = getState();
@@ -64,16 +71,31 @@ export const createStory = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.post(`${API_URL}/stories/`, storyData, {
+      // Include project_id in the story data
+      const storyWithProject = {
+        ...storyData,
+        project: projectId,
+        sprint: sprintId || null  // Ensure sprint is null if not provided
+      };
+
+      console.log('Sending story data:', storyWithProject);
+
+      const response = await axios.post(`${API_URL}/stories/`, storyWithProject, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
         withCredentials: true,
       });
+      
+      console.log('Story created successfully:', response.data);
       return response.data;
     } catch (err) {
       console.error('Error creating story:', err.response?.data || err.message);
-      rejectWithValue(err.response.data);
+      if (err.response?.data) {
+        return rejectWithValue(err.response.data);
+      }
+      return rejectWithValue('Failed to create story. Please check your input and try again.');
     }
   }
 );
@@ -143,6 +165,9 @@ const storySlice = createSlice({
     clearStoryError: (state) => {
       state.error = null;
     },
+    resetBacklogStories: (state) => {
+      state.backlogStories = [];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -181,7 +206,24 @@ const storySlice = createSlice({
       })
       .addCase(createStory.fulfilled, (state, action) => {
         state.loading = false;
-        state.stories.push(action.payload);
+        console.log('Story created, payload:', action.payload);
+        console.log('Current backlogStories:', state.backlogStories);
+        
+        // If the story doesn't have a sprint assigned, add it to backlogStories
+        if (!action.payload.sprint) {
+          // Check if story already exists in backlogStories
+          const exists = state.backlogStories.some(story => story.id === action.payload.id);
+          if (!exists) {
+            state.backlogStories = [...state.backlogStories, action.payload];
+          }
+          console.log('Updated backlogStories:', state.backlogStories);
+        } else {
+          // Check if story already exists in stories
+          const exists = state.stories.some(story => story.id === action.payload.id);
+          if (!exists) {
+            state.stories = [...state.stories, action.payload];
+          }
+        }
       })
       .addCase(createStory.rejected, (state, action) => {
         state.loading = false;
@@ -220,5 +262,5 @@ const storySlice = createSlice({
   },
 });
 
-export const { clearStoryError } = storySlice.actions;
+export const { clearStoryError, resetBacklogStories } = storySlice.actions;
 export default storySlice.reducer; 

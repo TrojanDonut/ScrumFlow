@@ -26,7 +26,7 @@ const UserStories = () => {
   
   useEffect(() => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
-    dispatch(fetchBacklogStories()); // Fetch backlog stories
+    dispatch(fetchBacklogStories(projectId)); // Updated to include projectId
     dispatch(fetchSprintById({ projectId: projectId, sprintId: sprintId }));
   }, [projectId, sprintId]);
 
@@ -48,7 +48,7 @@ const UserStories = () => {
     try {
       await dispatch(removeStoryFromSprint({ storyId })).unwrap();
       dispatch(fetchStories({ projectId, sprintId })); // Re-fetch stories
-      dispatch(fetchBacklogStories()); // Re-fetch backlog stories
+      dispatch(fetchBacklogStories(projectId)); // Re-fetch backlog stories with projectId
     } catch (err) {
       setError('Failed to remove story from sprint.');
     }
@@ -63,7 +63,7 @@ const UserStories = () => {
       // Dispatch an action to add the story to the sprint
       await dispatch(updateStory({ storyId: storyId, storyData: updatedStory }));
       dispatch(fetchStories({ projectId, sprintId })); // Re-fetch stories
-      dispatch(fetchBacklogStories()); // Re-fetch backlog stories
+      dispatch(fetchBacklogStories(projectId)); // Re-fetch backlog stories with projectId
     } catch (err) {
       setError('Failed to add story to sprint.');
     }

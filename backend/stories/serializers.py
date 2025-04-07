@@ -8,7 +8,7 @@ class UserStorySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserStory
         fields = ['id', 'name', 'text', 'priority', 'status', 'story_points',
-                  'sprint', 'acceptance_tests', 'business_value',
+                  'sprint', 'project', 'acceptance_tests', 'business_value',
                   'created_by', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
 
