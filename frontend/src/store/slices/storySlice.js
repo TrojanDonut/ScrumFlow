@@ -23,15 +23,16 @@ export const fetchStories = createAsyncThunk(
       });
       return response.data;
     } catch (err) {
-      rejectWithValue(err.response.data);
+      return rejectWithValue(err.response?.data || 'Failed to fetch stories');
     }
   }
 );
 
 export const fetchBacklogStories = createAsyncThunk(
   'stories/fetchBacklogStories',
-  async ( _ , { rejectWithValue, getState }) => {
+  async (projectId, { rejectWithValue, getState }) => {
     try {
+      console.log('Fetching backlog stories for project:', projectId);
       const { auth } = getState();
       const token = auth.token;
 
@@ -39,22 +40,28 @@ export const fetchBacklogStories = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.get(`${API_URL}/backlog/`, {
+      const url = `${API_URL}/projects/${projectId}/backlog/`;
+      console.log('Making request to:', url);
+
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
         withCredentials: true,
       });
+
+      console.log('Backlog API response:', response.data);
       return response.data;
     } catch (err) {
-      rejectWithValue(err.response.data);
+      console.error('Error fetching backlog stories:', err.response?.data || err.message);
+      return rejectWithValue(err.response?.data || 'Failed to fetch backlog stories');
     }
   }
 );
 
 export const createStory = createAsyncThunk(
   'stories/createStory',
-  async ({ sprintId, storyData }, { rejectWithValue, getState }) => {
+  async ({ sprintId, storyData, projectId }, { rejectWithValue, getState }) => {
     try {
       console.log('Creating story with data:', storyData);
       const { auth } = getState();
@@ -64,16 +71,31 @@ export const createStory = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.post(`${API_URL}/stories/`, storyData, {
+      // Include project_id in the story data
+      const storyWithProject = {
+        ...storyData,
+        project: projectId,
+        sprint: sprintId || null  // Ensure sprint is null if not provided
+      };
+
+      console.log('Sending story data:', storyWithProject);
+
+      const response = await axios.post(`${API_URL}/stories/`, storyWithProject, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
         withCredentials: true,
       });
+      
+      console.log('Story created successfully:', response.data);
       return response.data;
     } catch (err) {
       console.error('Error creating story:', err.response?.data || err.message);
-      rejectWithValue(err.response.data);
+      if (err.response?.data) {
+        return rejectWithValue(err.response.data);
+      }
+      return rejectWithValue('Failed to create story. Please check your input and try again.');
     }
   }
 );
@@ -131,7 +153,13 @@ export const removeStoryFromSprint = createAsyncThunk(
 
 const initialState = {
   stories: [],
-  backlogStories: [],
+  backlogStories: {
+    realized: [],
+    unrealized: {
+      active: [],
+      unactive: []
+    }
+  },
   loading: false,
   error: null,
 };
@@ -142,6 +170,15 @@ const storySlice = createSlice({
   reducers: {
     clearStoryError: (state) => {
       state.error = null;
+    },
+    resetBacklogStories: (state) => {
+      state.backlogStories = {
+        realized: [],
+        unrealized: {
+          active: [],
+          unactive: []
+        }
+      };
     },
   },
   extraReducers: (builder) => {
@@ -167,6 +204,7 @@ const storySlice = createSlice({
       })
       .addCase(fetchBacklogStories.fulfilled, (state, action) => {
         state.loading = false;
+        // The API now returns a structured object, not an array
         state.backlogStories = action.payload;
       })
       .addCase(fetchBacklogStories.rejected, (state, action) => {
@@ -181,7 +219,32 @@ const storySlice = createSlice({
       })
       .addCase(createStory.fulfilled, (state, action) => {
         state.loading = false;
-        state.stories.push(action.payload);
+        console.log('Story created, payload:', action.payload);
+        
+        // Handle adding the new story to the appropriate category
+        const newStory = action.payload;
+        
+        if (newStory.status === 'ACCEPTED') {
+          // Add to realized stories
+          state.backlogStories.realized.push(newStory);
+        } else {
+          // Add to unrealized stories
+          if (newStory.sprint) {
+            // Add to active stories
+            state.backlogStories.unrealized.active.push(newStory);
+          } else {
+            // Add to unactive stories
+            state.backlogStories.unrealized.unactive.push(newStory);
+          }
+        }
+        
+        // If it has a sprint, also add to sprint stories
+        if (newStory.sprint) {
+          const exists = state.stories.some(story => story.id === newStory.id);
+          if (!exists) {
+            state.stories.push(newStory);
+          }
+        }
       })
       .addCase(createStory.rejected, (state, action) => {
         state.loading = false;
@@ -193,9 +256,33 @@ const storySlice = createSlice({
       })
       .addCase(updateStory.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.stories.findIndex(story => story.id === action.payload.id);
-        if (index !== -1) {
-          state.stories[index] = action.payload;
+        const updatedStory = action.payload;
+        
+        // Update in sprint stories list if applicable
+        const sprintIndex = state.stories.findIndex(story => story.id === updatedStory.id);
+        if (sprintIndex !== -1) {
+          state.stories[sprintIndex] = updatedStory;
+        }
+        
+        // Update in the appropriate backlog category
+        // First, remove the story from all categories
+        state.backlogStories.realized = state.backlogStories.realized.filter(
+          story => story.id !== updatedStory.id
+        );
+        state.backlogStories.unrealized.active = state.backlogStories.unrealized.active.filter(
+          story => story.id !== updatedStory.id
+        );
+        state.backlogStories.unrealized.unactive = state.backlogStories.unrealized.unactive.filter(
+          story => story.id !== updatedStory.id
+        );
+        
+        // Then add to the appropriate category
+        if (updatedStory.status === 'ACCEPTED') {
+          state.backlogStories.realized.push(updatedStory);
+        } else if (updatedStory.sprint) {
+          state.backlogStories.unrealized.active.push(updatedStory);
+        } else {
+          state.backlogStories.unrealized.unactive.push(updatedStory);
         }
       })
       .addCase(updateStory.rejected, (state, action) => {
@@ -209,9 +296,26 @@ const storySlice = createSlice({
       .addCase(removeStoryFromSprint.fulfilled, (state, action) => {
         state.loading = false;
         const storyId = action.meta.arg.storyId;
+        
+        // Update the story in sprint stories
         state.stories = state.stories.map(story =>
           story.id === storyId ? { ...story, sprint: null } : story
         );
+        
+        // Update in backlog categories
+        // Find the story in active stories
+        const storyIndex = state.backlogStories.unrealized.active.findIndex(
+          story => story.id === storyId
+        );
+        
+        if (storyIndex !== -1) {
+          // Remove from active stories
+          const updatedStory = {...state.backlogStories.unrealized.active[storyIndex], sprint: null};
+          state.backlogStories.unrealized.active.splice(storyIndex, 1);
+          
+          // Add to unactive stories
+          state.backlogStories.unrealized.unactive.push(updatedStory);
+        }
       })
       .addCase(removeStoryFromSprint.rejected, (state, action) => {
         state.loading = false;
@@ -220,5 +324,5 @@ const storySlice = createSlice({
   },
 });
 
-export const { clearStoryError } = storySlice.actions;
+export const { clearStoryError, resetBacklogStories } = storySlice.actions;
 export default storySlice.reducer; 

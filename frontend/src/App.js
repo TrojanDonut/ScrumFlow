@@ -20,6 +20,7 @@ import EditProject from './pages/EditProject';
 import UserStories from './pages/UserStories';
 import AddUserStory from './pages/AddUserStory';
 import StoryInfo from './pages/StoryInfo';
+import ProductBacklog from './pages/ProductBacklog';
 
 function App() {
   const { isAuthenticated } = useSelector(state => state.auth);
@@ -105,6 +106,12 @@ function App() {
             </ProtectedRoute>
           } />
           
+          <Route path="/projects/:projectId/user-stories/:storyId" element={
+            <ProtectedRoute>
+              <StoryInfo />
+            </ProtectedRoute>
+          } />
+
           <Route path="/projects/:projectId/sprints/:sprintId/user-stories" element={
             <ProtectedRoute>
               <UserStories />
@@ -120,6 +127,12 @@ function App() {
           <Route path="/projects/:projectId/sprints/:sprintId/user-stories/:storyId" element={
             <ProtectedRoute>
               <StoryInfo />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/projects/:id/backlog" element={
+            <ProtectedRoute>
+              <ProductBacklog />
             </ProtectedRoute>
           } />
 

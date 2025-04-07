@@ -26,7 +26,7 @@ const UserStories = () => {
   
   useEffect(() => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
-    dispatch(fetchBacklogStories()); // Fetch backlog stories
+    dispatch(fetchBacklogStories(projectId)); // Updated to include projectId
     dispatch(fetchSprintById({ projectId: projectId, sprintId: sprintId }));
   }, [projectId, sprintId]);
 
@@ -48,7 +48,7 @@ const UserStories = () => {
     try {
       await dispatch(removeStoryFromSprint({ storyId })).unwrap();
       dispatch(fetchStories({ projectId, sprintId })); // Re-fetch stories
-      dispatch(fetchBacklogStories()); // Re-fetch backlog stories
+      dispatch(fetchBacklogStories(projectId)); // Re-fetch backlog stories with projectId
     } catch (err) {
       setError('Failed to remove story from sprint.');
     }
@@ -63,7 +63,7 @@ const UserStories = () => {
       // Dispatch an action to add the story to the sprint
       await dispatch(updateStory({ storyId: storyId, storyData: updatedStory }));
       dispatch(fetchStories({ projectId, sprintId })); // Re-fetch stories
-      dispatch(fetchBacklogStories()); // Re-fetch backlog stories
+      dispatch(fetchBacklogStories(projectId)); // Re-fetch backlog stories with projectId
     } catch (err) {
       setError('Failed to add story to sprint.');
     }
@@ -74,6 +74,11 @@ const UserStories = () => {
   const categorizedStories = states.map((state) =>
     stories.filter((story) => story.status === state)
   );
+
+  // Check if backlogStories is in the expected format and initialized
+  const backlogStoriesReady = backlogStories && 
+                             (typeof backlogStories === 'object') && 
+                             ('unrealized' in backlogStories);
 
   if (loading && currentSprint === null) {
     return <div>Loading...</div>;
@@ -106,6 +111,7 @@ const UserStories = () => {
       <Button
         variant="primary"
         onClick={() => setShowBacklogModal(true)}
+        disabled={!backlogStoriesReady}
       >
         Add Story From Backlog
       </Button>
@@ -133,12 +139,14 @@ const UserStories = () => {
       userStoryData={selectedStory}
       isEditMode={isEditMode}
     />
-    <AddStoryFromBacklog
-      show={showBacklogModal}
-      handleClose={() => setShowBacklogModal(false)}
-      backlogStories={backlogStories}
-      onAddToSprint={handleAddStoryToSprint}
-    />
+    {backlogStoriesReady && (
+      <AddStoryFromBacklog
+        show={showBacklogModal}
+        handleClose={() => setShowBacklogModal(false)}
+        backlogStories={backlogStories}
+        onAddToSprint={handleAddStoryToSprint}
+      />
+    )}
 
     {/* SprintEditModal */}
     <SprintEditModal

@@ -14,6 +14,8 @@ urlpatterns = [
     path('stories/<int:story_id>/comments/', views.UserStoryCommentListCreateView.as_view(), name='story-comment-list-create'),
     path('sprints/<int:sprint_id>/stories/', views.SprintStoriesView.as_view(), name='sprint-stories'),
     path('backlog/', views.UserStoryBacklogView.as_view(), name='story-backlog'),
+    path('projects/<int:project_id>/backlog/', views.ProjectBacklogView.as_view(), name='product-backlog'),
+    path('projects/<int:project_id>/user-stories/<int:story_id>/', views.UserStoryDetailView.as_view(), name='project-story-detail'),
     path('stories/<int:story_id>/estimate/', views.StoryEstimateView.as_view(), name='story-estimate'),
     path('stories/<int:story_id>/planning-poker/', views.PlanningPokerView.as_view(), name='planning-poker'),
     path('sprints/<int:sprint_id>/', include(router.urls)),
