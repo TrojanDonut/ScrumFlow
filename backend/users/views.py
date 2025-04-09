@@ -14,6 +14,9 @@ from .serializers import (
 )
 from .permissions import IsAdminUserType
 
+from projects.models import ProjectMember
+
+
 User = get_user_model()
 
 
@@ -69,6 +72,33 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
             self.permission_denied(self.request, message="You do not have permission to access this user's information.")
         return obj
 
+
+class ProjectDevelopersView(APIView):
+    """
+    Fetch all users with the 'Developer' role on a specific project
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, project_id):
+        try:
+            # Filter ProjectMember objects by project and role
+            developers = ProjectMember.objects.filter(
+                project_id=project_id,
+                role=ProjectMember.Role.DEVELOPER
+            ).select_related('user')
+
+            # Serialize the user data
+            serialized_developers = UserDetailSerializer(
+                [member.user for member in developers],
+                many=True
+            )
+
+            return Response(serialized_developers.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class CurrentUserView(APIView):
     """
