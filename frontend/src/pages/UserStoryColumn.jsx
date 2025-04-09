@@ -1,7 +1,34 @@
-import React from 'react';
-import { ListGroup, Button, Collapse } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { ListGroup, Button, Collapse, Spinner } from 'react-bootstrap';
+import { fetchTasks } from '../store/slices/taskSlice';
 
-const UserStoryColumn = ({ title, stories, onEdit, onToggleExpand, expandedStoryId, onRemoveFromSprint }) => {
+const UserStoryColumn = ({ 
+  title, 
+  stories, 
+  onEdit, 
+  onToggleExpand, 
+  expandedStoryId, 
+  onRemoveFromSprint,
+  tasksByStoryId,
+}) => {
+  // const dispatch = useDispatch();
+
+  // // Select tasks and loading states from the Redux store
+  // const tasks = useSelector((state) => state.tasks.tasksByStoryId);
+  // const loadingTasks = useSelector((state) => state.tasks.loadingByStoryId);
+
+  // const handleToggleExpand = (storyId) => {
+  //   onToggleExpand(storyId);
+
+  //   // Dispatch fetchTasks if tasks for the story are not already loaded
+  //   if (!tasks[storyId]) {
+  //     dispatch(fetchTasks(storyId));
+  //     console.log('Tasks:', tasks);
+  //     console.log('Loading Tasks:', loadingTasks);
+  //   }
+  // };
+
   return (
     <div className="col">
       <h3>{title}</h3>
@@ -27,6 +54,23 @@ const UserStoryColumn = ({ title, stories, onEdit, onToggleExpand, expandedStory
                     </React.Fragment>
                   ))}
                 </p>
+
+                {/* Render tasks */}
+                {tasksByStoryId[story.id] && tasksByStoryId[story.id].length > 0 ? (
+                  <div className="mt-3">
+                    <h5>Tasks:</h5>
+                    <ul>
+                      {tasksByStoryId[story.id].map((task) => (
+                        <li key={task.id}>
+                          {task.title} - {task.status}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="mt-3 text-muted">This story has no tasks.</div>
+                )}
+
                 <div className="d-flex justify-content-end mt-2">
                   <Button
                     variant="outline-primary"

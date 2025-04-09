@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
 import { fetchStories, removeStoryFromSprint, updateStory, fetchBacklogStories } from '../store/slices/storySlice';
 import { fetchSprintById } from '../store/slices/sprintSlice';
+import { fetchTasksByProject } from '../store/slices/taskSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import AddUserStory from './AddUserStory';
 import UserStoryColumn from './UserStoryColumn'; // Import the new component
@@ -20,14 +21,16 @@ const UserStories = () => {
   const [expandedStoryId, setExpandedStoryId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const dispatch = useDispatch();
+  
   const { stories, backlogStories } = useSelector((state) => state.stories);
   const { loading, error: sprintError, currentSprint } = useSelector((state) => state.sprints);
-  
+  const { tasksByStoryId } = useSelector((state) => state.tasks);
   
   useEffect(() => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
     dispatch(fetchBacklogStories(projectId)); // Updated to include projectId
     dispatch(fetchSprintById({ projectId: projectId, sprintId: sprintId }));
+    dispatch(fetchTasksByProject(projectId));
   }, [projectId, sprintId]);
 
   const handleUserStoryAdded = (newStory) => {
@@ -127,6 +130,7 @@ const UserStories = () => {
           onToggleExpand={toggleExpandStory}
           expandedStoryId={expandedStoryId}
           onRemoveFromSprint={handleRemoveFromSprint}
+          tasksByStoryId={tasksByStoryId}
         />
       ))}
     </div>
