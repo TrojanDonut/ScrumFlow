@@ -21,7 +21,7 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
     business_value: '',
     status: 'NOT_STARTED',
     sprint: sprintId || null, // If sprintId is undefined, set to null (for product backlog)
-    story_points: 2
+    story_points: ''
   });
   
   const [formData, setFormData] = useState(getDefaultState());
@@ -79,7 +79,7 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
       } else {
         console.log('Creating new user story');
         const result = await dispatch(createStory({ 
-          sprintId: null, // Explicitly set to null for backlog stories
+          sprintId: sprintId, // Explicitly set to null for backlog stories
           storyData: formattedData,
           projectId
         })).unwrap();
@@ -192,6 +192,16 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
               required
             />
           </Form.Group>
+          <Form.Group className="mb-3">
+          <Form.Label>Story Points</Form.Label>
+            <Form.Control
+              type="number"
+              name="story_points"
+              value={formData.story_points}
+              onChange={handleChange}
+              required
+            />
+        </Form.Group>
           <Button type="submit" variant="primary" disabled={loading}>
             {loading ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update User Story' : 'Add User Story')}
           </Button>
