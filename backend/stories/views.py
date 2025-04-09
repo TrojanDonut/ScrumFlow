@@ -70,6 +70,12 @@ class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
         obj = get_object_or_404(queryset)
         print(f"Found story: {obj.name} (ID: {obj.id}, Project: {obj.project_id}, Sprint: {obj.sprint_id})")
         return obj
+    
+    def destroy(self, request, *args, **kwargs):
+        """Override destroy method to handle deletion."""
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({"message": "Story deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 
 class RemoveStoryFromSprintView(APIView):

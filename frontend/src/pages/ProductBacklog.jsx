@@ -20,6 +20,7 @@ import {
 import { fetchBacklogStories, fetchStories, resetBacklogStories, updateStory } from '../store/slices/storySlice';
 import { fetchProjectById } from '../store/slices/projectSlice';
 import AddUserStory from './AddUserStory';
+import { deleteStory } from '../store/slices/storySlice';
 
 const ProductBacklog = () => {
   const { id } = useParams();
@@ -64,29 +65,14 @@ const ProductBacklog = () => {
     setShowModal(true);
   };
 
-  const handleOpenSizeModal = (story) => {
-    setSelectedStory(story);
-    setNewStoryPoints(story.story_points || '');
-    setShowSizeModal(true);
-  };
 
-  const handleCloseSizeModal = () => {
-    setSelectedStory(null);
-    setNewStoryPoints('');
-    setShowSizeModal(false);
-  };
-
-  const handleSaveSize = async () => {
-    if (selectedStory) {
-      if (newStoryPoints < 1 || newStoryPoints > 50) {
-        alert('Story points must be between 1 and 50.');
-        return;
-      }
-      
-      const updatedStory = { ...selectedStory, story_points: newStoryPoints };
-      await dispatch(updateStory({ storyId: selectedStory.id, storyData: updatedStory }));
-      dispatch(fetchBacklogStories(id)); // Refresh backlog
-      handleCloseSizeModal();
+  const handleRemoveStory = async (storyId) => {
+    try {
+      console.log('Removing story with ID:', storyId); // Debugging
+      await dispatch(deleteStory({ storyId })).unwrap();
+      dispatch(fetchBacklogStories(id));
+    } catch (err) {
+      console.error('Failed to remove story:', err);
     }
   };
 
@@ -182,18 +168,7 @@ const ProductBacklog = () => {
                     </Badge>
                   </div>
                   <div>
-                    {!story.sprint && ( // Prikaži gumb in "Set Size" samo za zgodbe brez sprinta
-                      <Button 
-                        variant="outline-primary" 
-                        size="sm" 
-                        className="me-2"
-                        onClick={() => handleOpenSizeModal(story)}
-                      >
-                        Set Size
-                      </Button>
-                    )}
-                    
-                    {!story.sprint && ( // Prikaži gumb "Edit" samo za zgodbe brez sprinta
+                  {!story.sprint && ( // Prikaži gumbe samo za zgodbe brez sprinta
                       <Button 
                         variant="outline-primary" 
                         size="sm" 
@@ -202,16 +177,26 @@ const ProductBacklog = () => {
                       >
                         Edit
                       </Button>
-                      )}
+                  )}
                     
                     <Button 
-                      variant="outline-info" 
+                      variant="outline-primary" 
                       size="sm" 
+                      className="me-2"
                       as={Link} 
                       to={`/projects/${id}/user-stories/${story.id}`}
                     >
                       Details
                     </Button>
+                    {!story.sprint && ( // Prikaži gumb samo za zgodbe brez sprinta
+                    <Button 
+                        variant="danger" 
+                        size="sm" 
+                        onClick={() => handleRemoveStory(story.id)}
+                      >
+                        Remove
+                      </Button>
+                    )}
                   </div>
                 </ListGroup.Item>
               ))}
@@ -328,36 +313,6 @@ const ProductBacklog = () => {
         isEditMode={isEditMode}
         projectId={id}
       />
-
-      {/* Modal for setting story size */}
-      <Modal show={showSizeModal} onHide={handleCloseSizeModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Set Story Size</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group controlId="storyPoints">
-              <Form.Label>Story Points</Form.Label>
-              <Form.Control
-                type="number"
-                value={newStoryPoints}
-                onChange={(e) => setNewStoryPoints(e.target.value)}
-                placeholder="Enter story points"
-                min="1"
-                max="50"
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseSizeModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveSize}>
-            Save
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </Container>
   );
 };
