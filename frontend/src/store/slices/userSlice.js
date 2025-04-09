@@ -95,6 +95,29 @@ export const deleteUser = createAsyncThunk(
   }
 );
 
+export const fetchProjectDevelopers = createAsyncThunk(
+  'users/fetchProjectDevelopers',
+  async (projectId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token || localStorage.getItem('access');
+      
+      if (!token) {
+        throw new Error('No token found');
+      }
+      
+      const response = await axios.get(`${API_URL}/projects/${projectId}/developers/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const initialState = {
   users: [],
   loading: false,
@@ -168,6 +191,18 @@ const userSlice = createSlice({
       .addCase(deleteUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to delete user';
+      })
+      .addCase(fetchProjectDevelopers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProjectDevelopers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.users = action.payload; // Assuming the response contains a list of developers
+      })
+      .addCase(fetchProjectDevelopers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch project developers';
       });
   },
 });

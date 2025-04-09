@@ -30,6 +30,14 @@ class UserStory(models.Model):
     business_value = models.PositiveIntegerField()
     story_points = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.NOT_STARTED)
+
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='assigned_user',
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL)
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
