@@ -315,7 +315,9 @@ const projectSlice = createSlice({
       })
       .addCase(addMemberToProject.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentProject.members = [...state.currentProject.members, action.payload];
+        if (state.currentProject !== null) {
+          state.currentProject.members = [...state.currentProject.members, action.payload];
+        }
       })
       .addCase(addMemberToProject.rejected, (state, action) => {
         state.loading = false;

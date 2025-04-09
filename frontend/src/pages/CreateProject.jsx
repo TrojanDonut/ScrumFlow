@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Form, Button, Alert, Spinner } from 'react-bootstrap';
-import { createProject, clearProjectError } from '../store/slices/projectSlice';
+import { createProject, clearProjectError, addMemberToProject } from '../store/slices/projectSlice';
 import { useNavigate } from 'react-router-dom';
 import { formatErrorMessage } from '../utils/errorUtils';
 import { fetchUsers } from '../store/slices/userSlice'; // Assuming you have a slice for fetching users
@@ -18,6 +18,8 @@ const CreateProject = () => {
     scrum_master: ''
   });
 
+  const [developers, setDevelopers] = useState([]);
+
   useEffect(() => {
     dispatch(fetchUsers(true)); // Fetch users when the component mounts
   }, []);
@@ -33,10 +35,17 @@ const CreateProject = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await dispatch(createProject(project));
-    if (createProject.fulfilled.match(result)) {
-      navigate('/projects');
-    }
-  };
+    const projectId = result.payload.id;
+    if (projectId) {
+      // Add members to the project
+      const addMemberPromises = developers.map(dev => {
+        return dispatch(addMemberToProject({userId: dev.id, projectId, role: 'DEVELOPER'}));
+      });
+    };
+      if (createProject.fulfilled.match(result)) {
+        navigate('/projects');
+      }
+  }
 
 
   if (loading) {
@@ -109,6 +118,42 @@ const CreateProject = () => {
               ))}
             </Form.Control>
           </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Team Members</Form.Label>
+            <Form.Control
+              as="select"
+              name="members"
+              onChange={(e) => {
+                const selectedMemberId = e.target.value;
+                const selectedMember = users.find(user => user.id === parseInt(selectedMemberId, 10));
+                if (selectedMember && !developers.some(dev => dev.id === selectedMember.id)) {
+                  setDevelopers([...developers, selectedMember]);
+                }
+              }}
+            >
+              <option value="">Select a Team Member</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>{user.username}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+          <Form.Group className="mb-3">
+          <Form.Label>Selected Team Members</Form.Label>
+          <ul>
+            {developers.map(dev => (
+              <li key={dev.id}>
+                {dev.username}{' '}
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setDevelopers(developers.filter(d => d.id !== dev.id))}
+                >
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </Form.Group>
           <Button variant="primary" type="submit" disabled={loading}>
             {loading ? <Spinner animation="border" size="sm" /> : 'Create Project'}
           </Button>
