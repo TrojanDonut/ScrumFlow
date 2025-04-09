@@ -111,7 +111,7 @@ const UserStories = () => {
       <Button
         variant="primary"
         onClick={() => setShowBacklogModal(true)}
-        disabled={!backlogStoriesReady}
+        disabled={!currentSprint?.is_active || !backlogStoriesReady}
       >
         Add Story From Backlog
       </Button>

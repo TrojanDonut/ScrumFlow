@@ -13,9 +13,11 @@ import {
   Accordion,
   Badge,
   Tab,
-  Nav
+  Nav,
+  Modal,
+  Form
 } from 'react-bootstrap';
-import { fetchBacklogStories, fetchStories, resetBacklogStories } from '../store/slices/storySlice';
+import { fetchBacklogStories, fetchStories, resetBacklogStories, updateStory } from '../store/slices/storySlice';
 import { fetchProjectById } from '../store/slices/projectSlice';
 import AddUserStory from './AddUserStory';
 
@@ -27,6 +29,8 @@ const ProductBacklog = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStory, setSelectedStory] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showSizeModal, setShowSizeModal] = useState(false);
+  const [newStoryPoints, setNewStoryPoints] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -58,6 +62,32 @@ const ProductBacklog = () => {
     setSelectedStory(null);
     setIsEditMode(false);
     setShowModal(true);
+  };
+
+  const handleOpenSizeModal = (story) => {
+    setSelectedStory(story);
+    setNewStoryPoints(story.story_points || '');
+    setShowSizeModal(true);
+  };
+
+  const handleCloseSizeModal = () => {
+    setSelectedStory(null);
+    setNewStoryPoints('');
+    setShowSizeModal(false);
+  };
+
+  const handleSaveSize = async () => {
+    if (selectedStory) {
+      if (newStoryPoints < 1 || newStoryPoints > 50) {
+        alert('Story points must be between 1 and 50.');
+        return;
+      }
+      
+      const updatedStory = { ...selectedStory, story_points: newStoryPoints };
+      await dispatch(updateStory({ storyId: selectedStory.id, storyData: updatedStory }));
+      dispatch(fetchBacklogStories(id)); // Refresh backlog
+      handleCloseSizeModal();
+    }
   };
 
   const getPriorityBadgeVariant = (priority) => {
@@ -152,6 +182,17 @@ const ProductBacklog = () => {
                     </Badge>
                   </div>
                   <div>
+                    {!story.sprint && ( // Prikaži gumb "Set Size" samo za zgodbe brez sprinta
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm" 
+                        className="me-2"
+                        onClick={() => handleOpenSizeModal(story)}
+                      >
+                        Set Size
+                      </Button>
+
+                    )}
                     <Button 
                       variant="outline-primary" 
                       size="sm" 
@@ -284,6 +325,36 @@ const ProductBacklog = () => {
         isEditMode={isEditMode}
         projectId={id}
       />
+
+      {/* Modal for setting story size */}
+      <Modal show={showSizeModal} onHide={handleCloseSizeModal}>
+        <Modal.Header closeButton>
+          <Modal.Title>Set Story Size</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group controlId="storyPoints">
+              <Form.Label>Story Points</Form.Label>
+              <Form.Control
+                type="number"
+                value={newStoryPoints}
+                onChange={(e) => setNewStoryPoints(e.target.value)}
+                placeholder="Enter story points"
+                min="1"
+                max="50"
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseSizeModal}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSaveSize}>
+            Save
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

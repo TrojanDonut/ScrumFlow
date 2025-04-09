@@ -9,9 +9,9 @@ class SprintSerializer(serializers.ModelSerializer):
         model = Sprint
         fields = [
             'id', 'project', 'start_date', 'end_date', 'velocity',
-            'created_by', 'created_at', 'updated_at'
+            'created_by', 'created_at', 'updated_at', 'is_active'
         ]
-        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at', 'is_active']
 
     def validate(self, data):
         """Custom validation for sprint dates and velocity"""

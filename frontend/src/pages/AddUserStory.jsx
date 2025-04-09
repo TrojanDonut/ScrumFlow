@@ -86,6 +86,15 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
         console.log('Story created successfully:', result);
       }
       
+      onUserStoryAdded(); // Notify parent component
+      setFormData({
+        name: '',
+        text: '',
+        acceptance_tests: '',
+        priority: 'MUST_HAVE',
+        business_value: '',
+      });
+
       // Refresh appropriate data based on context
       if (sprintId) {
         dispatch(fetchStories({ projectId, sprintId }));
