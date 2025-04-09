@@ -24,8 +24,8 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
     business_value: '',
     status: 'NOT_STARTED',
     sprint: sprintId || null,
-    story_points: 2,
     assigned_to: null, // New field for assigned developer
+    story_points: ''
   });
   const [formData, setFormData] = useState(getDefaultState());
 
@@ -36,7 +36,7 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
         name: userStoryData.name || defaultState.name,
         text: userStoryData.text || defaultState.text,
         acceptance_tests: userStoryData.acceptance_tests || defaultState.acceptance_tests,
-        priority: userStoryData.priority || defaultState.priority,
+        priority: userStoryData.priority || defaultState.priority, 
         business_value: userStoryData.business_value || defaultState.business_value,
         status: userStoryData.status || defaultState.status,
         sprint: userStoryData.sprint || defaultState.sprint,
@@ -91,7 +91,13 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
       if (isEditMode) {
         await dispatch(updateStory({ storyId: userStoryData.id, storyData: formattedData })).unwrap();
       } else {
-        await dispatch(createStory({ sprintId: null, storyData: formattedData, projectId })).unwrap();
+        console.log('Creating new user story');
+        const result = await dispatch(createStory({
+          sprintId: sprintId, // Explicitly set to null for backlog stories
+          storyData: formattedData,
+          projectId
+        })).unwrap();
+        console.log('Story created successfully:', result);
       }
       if (sprintId) {
         dispatch(fetchStories({ projectId, sprintId }));
@@ -182,6 +188,16 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
               type="number"
               name="business_value"
               value={formData.business_value}
+              onChange={handleChange}
+              required
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+          <Form.Label>Story Points</Form.Label>
+            <Form.Control
+              type="number"
+              name="story_points"
+              value={formData.story_points}
               onChange={handleChange}
               required
             />
