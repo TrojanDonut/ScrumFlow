@@ -182,7 +182,7 @@ const ProductBacklog = () => {
                     </Badge>
                   </div>
                   <div>
-                    {!story.sprint && ( // Prikaži gumb "Set Size" samo za zgodbe brez sprinta
+                    {!story.sprint && ( // Prikaži gumb in "Set Size" samo za zgodbe brez sprinta
                       <Button 
                         variant="outline-primary" 
                         size="sm" 
@@ -191,16 +191,19 @@ const ProductBacklog = () => {
                       >
                         Set Size
                       </Button>
-
                     )}
-                    <Button 
-                      variant="outline-primary" 
-                      size="sm" 
-                      className="me-2"
-                      onClick={() => handleEditStory(story)}
-                    >
-                      Edit
-                    </Button>
+                    
+                    {!story.sprint && ( // Prikaži gumb "Edit" samo za zgodbe brez sprinta
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm" 
+                        className="me-2"
+                        onClick={() => handleEditStory(story)}
+                      >
+                        Edit
+                      </Button>
+                      )}
+                    
                     <Button 
                       variant="outline-info" 
                       size="sm" 

@@ -2,11 +2,19 @@ import React, { useState } from 'react';
 import { Modal, Button, ListGroup, Tab, Nav } from 'react-bootstrap';
 
 const AddStoryFromBacklog = ({ show, handleClose, backlogStories, onAddToSprint }) => {
-  const [selectedStory, setSelectedStory] = useState(null);
+  const [selectedStories, setSelectedStories] = useState([]);
+
+  const handleToggleStory = (story) => {
+    if (selectedStories.includes(story)) {
+      setSelectedStories(selectedStories.filter((s) => s !== story));
+    } else {
+      setSelectedStories([...selectedStories, story]);
+    }
+  };
 
   const handleAdd = () => {
-    if (selectedStory) {
-      onAddToSprint(selectedStory);
+    if (selectedStories.length > 0) {
+      onAddToSprint(selectedStories);
       handleClose();
     }
   };
@@ -27,8 +35,8 @@ const AddStoryFromBacklog = ({ show, handleClose, backlogStories, onAddToSprint 
             {unactiveStories.map((story) => (
               <ListGroup.Item
                 key={story.id}
-                active={selectedStory === story}
-                onClick={() => setSelectedStory(story)}
+                active={selectedStories.includes(story)}
+                onClick={() => handleToggleStory(story)}
                 style={{ cursor: 'pointer' }}
               >
                 {story.name}
@@ -41,7 +49,7 @@ const AddStoryFromBacklog = ({ show, handleClose, backlogStories, onAddToSprint 
         <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleAdd} disabled={!selectedStory}>
+        <Button variant="primary" onClick={handleAdd} disabled={!selectedStories.length === 0}>
           Add to Sprint
         </Button>
       </Modal.Footer>
