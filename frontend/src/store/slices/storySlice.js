@@ -127,6 +127,34 @@ export const updateStory = createAsyncThunk(
   }
 );
 
+export const deleteStory = createAsyncThunk(
+  'stories/deleteStory',
+  async ({ storyId }, { rejectWithValue, getState }) => {
+    try {
+      console.log('Sending DELETE request for story ID:', storyId); // Debugging
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.delete(`${API_URL}/stories/${storyId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+
+      console.log('Story deleted successfully:', response.data); // Debugging
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting story:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || 'Failed to delete story');
+    }
+  }
+);
+
 export const removeStoryFromSprint = createAsyncThunk(
   'stories/removeStoryFromSprint',
   async ({ storyId }, { rejectWithValue, getState }) => {

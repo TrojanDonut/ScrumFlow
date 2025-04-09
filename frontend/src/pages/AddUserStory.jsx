@@ -4,15 +4,18 @@ import axios from 'axios';
 import { Button, Form, Alert, Modal } from 'react-bootstrap';
 import { useDispatch } from 'react-redux';
 import { updateStory, createStory, fetchStories, fetchBacklogStories } from '../store/slices/storySlice';
+import { fetchProjectDevelopers } from '../store/slices/userSlice';
 
 const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEditMode, projectId: propProjectId }) => {
-  // Allow projectId to be passed as prop (for ProductBacklog) or from URL params (for Sprint UserStories)
   const params = useParams();
   const projectId = propProjectId || params.projectId;
   const sprintId = params.sprintId;
   const dispatch = useDispatch();
-  
-  // Move defaultState outside of the component or memoize it
+
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [developers, setDevelopers] = useState([]); // State to store developers
+
   const getDefaultState = () => ({
     name: '',
     text: '',
@@ -20,13 +23,11 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
     priority: 'MUST_HAVE',
     business_value: '',
     status: 'NOT_STARTED',
-    sprint: sprintId || null, // If sprintId is undefined, set to null (for product backlog)
+    sprint: sprintId || null,
+    assigned_to: null, // New field for assigned developer
     story_points: ''
   });
-  
   const [formData, setFormData] = useState(getDefaultState());
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isEditMode && userStoryData) {
@@ -39,12 +40,29 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
         business_value: userStoryData.business_value || defaultState.business_value,
         status: userStoryData.status || defaultState.status,
         sprint: userStoryData.sprint || defaultState.sprint,
-        story_points: userStoryData.story_points || defaultState.story_points
+        story_points: userStoryData.story_points || defaultState.story_points,
+        assigned_to: userStoryData.assigned_to || defaultState.assigned_to, // Pre-fill assigned developer
       });
     } else {
       setFormData(getDefaultState());
     }
-  }, [isEditMode, userStoryData, sprintId]); // Remove defaultState from dependencies
+  }, [isEditMode, userStoryData, sprintId]);
+
+  useEffect(() => {
+    // Fetch developers for the project
+    const fetchDevelopers = async () => {
+      try {
+        const result = await dispatch(fetchProjectDevelopers(projectId)).unwrap();
+        setDevelopers(result); // Store developers in state
+      } catch (err) {
+        console.error('Failed to fetch developers:', err);
+      }
+    };
+
+    if (projectId) {
+      fetchDevelopers();
+    }
+  }, [projectId, dispatch]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -66,51 +84,33 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
       sprint: formData.sprint ? parseInt(formData.sprint, 10) : null,
       business_value: parseInt(formData.business_value, 10),
       story_points: parseInt(formData.story_points, 10),
-      project: projectId // Explicitly set the project ID
+      project: projectId,
     };
-
-    console.log('Submitting story with data:', formattedData);
-    console.log('Project ID:', projectId);
 
     try {
       if (isEditMode) {
-        console.log('Updating user story:', formData);
         await dispatch(updateStory({ storyId: userStoryData.id, storyData: formattedData })).unwrap();
       } else {
         console.log('Creating new user story');
-        const result = await dispatch(createStory({ 
+        const result = await dispatch(createStory({
           sprintId: sprintId, // Explicitly set to null for backlog stories
           storyData: formattedData,
           projectId
         })).unwrap();
         console.log('Story created successfully:', result);
       }
-      
-      // Refresh appropriate data based on context
       if (sprintId) {
         dispatch(fetchStories({ projectId, sprintId }));
       }
-      
-      // Always refresh backlog stories for both contexts
       if (projectId) {
         dispatch(fetchBacklogStories(projectId));
       }
-      
       if (onUserStoryAdded) {
         onUserStoryAdded();
       }
-      
-      handleClose(); // Close the modal after success
+      handleClose();
     } catch (err) {
-      if (err.response && err.response.data) {
-        setError(err.response.data.detail || 'An error occurred.');
-      } else if (typeof err === 'string') {
-        setError(err);
-      } else if (err.message) {
-        setError(err.message);
-      } else {
-        setError('An error occurred. Please try again.');
-      }
+      setError(err.response?.data?.detail || err.message || 'An error occurred.');
     } finally {
       setLoading(false);
     }
@@ -201,7 +201,22 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
               onChange={handleChange}
               required
             />
-        </Form.Group>
+          </Form.Group>
+                    <Form.Group className="mb-3">
+            <Form.Label>Assign Developer</Form.Label>
+            <Form.Select
+              name="assigned_to"
+              value={formData.assigned_to || ''}
+              onChange={handleChange}
+            >
+              <option value="">Unassigned</option>
+              {developers.map((dev) => (
+                <option key={dev.id} value={dev.id}>
+                  {dev.username}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
           <Button type="submit" variant="primary" disabled={loading}>
             {loading ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update User Story' : 'Add User Story')}
           </Button>
