@@ -199,6 +199,8 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
               name="story_points"
               value={formData.story_points}
               onChange={handleChange}
+              min="1"
+              max="50"
               required
             />
           </Form.Group>
