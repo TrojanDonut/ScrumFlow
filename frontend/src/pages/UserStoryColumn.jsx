@@ -12,23 +12,6 @@ const UserStoryColumn = ({
   onRemoveFromSprint,
   tasksByStoryId,
 }) => {
-  // const dispatch = useDispatch();
-
-  // // Select tasks and loading states from the Redux store
-  // const tasks = useSelector((state) => state.tasks.tasksByStoryId);
-  // const loadingTasks = useSelector((state) => state.tasks.loadingByStoryId);
-
-  // const handleToggleExpand = (storyId) => {
-  //   onToggleExpand(storyId);
-
-  //   // Dispatch fetchTasks if tasks for the story are not already loaded
-  //   if (!tasks[storyId]) {
-  //     dispatch(fetchTasks(storyId));
-  //     console.log('Tasks:', tasks);
-  //     console.log('Loading Tasks:', loadingTasks);
-  //   }
-  // };
-
   return (
     <div className="col">
       <h3>{title}</h3>
@@ -58,8 +41,9 @@ const UserStoryColumn = ({
                 {/* Render tasks */}
                 {tasksByStoryId[story.id] && tasksByStoryId[story.id].length > 0 ? (
                   <div className="mt-3">
-                    <h5>Tasks:</h5>
-                    <ul>
+                    <hr/>
+                    <h6>Tasks:</h6>
+                    <ul style={{ paddingLeft: 0, listStylePosition: 'inside' }}>
                       {tasksByStoryId[story.id].map((task) => (
                         <li key={task.id}>
                           {task.title} - {task.status}
