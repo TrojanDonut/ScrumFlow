@@ -9,7 +9,7 @@ class UserStorySerializer(serializers.ModelSerializer):
         model = UserStory
         fields = ['id', 'name', 'text', 'priority', 'status', 'story_points',
                   'sprint', 'project', 'acceptance_tests', 'business_value',
-                  'created_by', 'created_at', 'updated_at']
+                  'created_by', 'created_at', 'updated_at', 'assigned_to']
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
 
     def validate(self, data):
