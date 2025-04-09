@@ -13,11 +13,14 @@ import {
   Accordion,
   Badge,
   Tab,
-  Nav
+  Nav,
+  Modal,
+  Form
 } from 'react-bootstrap';
-import { fetchBacklogStories, fetchStories, resetBacklogStories } from '../store/slices/storySlice';
+import { fetchBacklogStories, fetchStories, resetBacklogStories, updateStory } from '../store/slices/storySlice';
 import { fetchProjectById } from '../store/slices/projectSlice';
 import AddUserStory from './AddUserStory';
+import { deleteStory } from '../store/slices/storySlice';
 
 const ProductBacklog = () => {
   const { id } = useParams();
@@ -27,6 +30,8 @@ const ProductBacklog = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStory, setSelectedStory] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showSizeModal, setShowSizeModal] = useState(false);
+  const [newStoryPoints, setNewStoryPoints] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -58,6 +63,17 @@ const ProductBacklog = () => {
     setSelectedStory(null);
     setIsEditMode(false);
     setShowModal(true);
+  };
+
+
+  const handleRemoveStory = async (storyId) => {
+    try {
+      console.log('Removing story with ID:', storyId); // Debugging
+      await dispatch(deleteStory({ storyId })).unwrap();
+      dispatch(fetchBacklogStories(id));
+    } catch (err) {
+      console.error('Failed to remove story:', err);
+    }
   };
 
   const getPriorityBadgeVariant = (priority) => {
@@ -152,22 +168,35 @@ const ProductBacklog = () => {
                     </Badge>
                   </div>
                   <div>
+                  {!story.sprint && ( // Prikaži gumbe samo za zgodbe brez sprinta
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm" 
+                        className="me-2"
+                        onClick={() => handleEditStory(story)}
+                      >
+                        Edit
+                      </Button>
+                  )}
+                    
                     <Button 
                       variant="outline-primary" 
                       size="sm" 
                       className="me-2"
-                      onClick={() => handleEditStory(story)}
-                    >
-                      Edit
-                    </Button>
-                    <Button 
-                      variant="outline-info" 
-                      size="sm" 
                       as={Link} 
                       to={`/projects/${id}/user-stories/${story.id}`}
                     >
                       Details
                     </Button>
+                    {!story.sprint && ( // Prikaži gumb samo za zgodbe brez sprinta
+                    <Button 
+                        variant="danger" 
+                        size="sm" 
+                        onClick={() => handleRemoveStory(story.id)}
+                      >
+                        Remove
+                      </Button>
+                    )}
                   </div>
                 </ListGroup.Item>
               ))}

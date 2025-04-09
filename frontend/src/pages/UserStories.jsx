@@ -56,16 +56,18 @@ const UserStories = () => {
 
   const [showBacklogModal, setShowBacklogModal] = useState(false); // Assuming backlog stories are in the Redux store
 
-  const handleAddStoryToSprint = async (story) => {
+  const handleAddStoryToSprint = async (selectedStories) => {
     try {
-      const updatedStory = { ...story, sprint: sprintId };
-      const storyId = story.id;
+      for (const story of selectedStories) {
+        const updatedStory = { ...story, sprint: sprintId };
+        const storyId = story.id;
+        await dispatch(updateStory({ storyId: storyId, storyData: updatedStory })).unwrap();
+      }
       // Dispatch an action to add the story to the sprint
-      await dispatch(updateStory({ storyId: storyId, storyData: updatedStory }));
       dispatch(fetchStories({ projectId, sprintId })); // Re-fetch stories
       dispatch(fetchBacklogStories(projectId)); // Re-fetch backlog stories with projectId
     } catch (err) {
-      setError('Failed to add story to sprint.');
+      setError('Failed to add stories to sprint.');
     }
   };
 
@@ -111,7 +113,7 @@ const UserStories = () => {
       <Button
         variant="primary"
         onClick={() => setShowBacklogModal(true)}
-        disabled={!backlogStoriesReady}
+        disabled={!currentSprint?.is_active || !backlogStoriesReady}
       >
         Add Story From Backlog
       </Button>

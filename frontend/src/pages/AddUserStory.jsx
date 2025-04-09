@@ -93,7 +93,6 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
       } else {
         await dispatch(createStory({ sprintId: null, storyData: formattedData, projectId })).unwrap();
       }
-
       if (sprintId) {
         dispatch(fetchStories({ projectId, sprintId }));
       }
