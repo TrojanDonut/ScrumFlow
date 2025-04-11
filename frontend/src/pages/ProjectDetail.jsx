@@ -19,6 +19,7 @@ const ProjectDetail = () => {
     end_date: "",
     velocity: 0,
   });
+  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     dispatch(fetchProjectById(id));
@@ -29,11 +30,26 @@ const ProjectDetail = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    dispatch(createSprint({ projectId: id, sprintData: formData }));
-    setFormData({ start_date: "", end_date: "", velocity: 0 });
+    
+    try {
+      await dispatch(createSprint({ projectId: id, sprintData: formData })).unwrap();
+      
+      // Reset form
+      setFormData({ start_date: "", end_date: "", velocity: 0 });
+      
+      // Refresh sprints list
+      dispatch(fetchSprints(id));
+      
+      // Show success message
+      setSuccessMessage('Sprint created successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error('Failed to create sprint:', err);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -116,13 +132,14 @@ const ProjectDetail = () => {
               <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="form-control" required />
             </div>
             <div className="mb-3">
-              <label className="form-label">Velocity (v točkah):</label>
+              <label className="form-label">Velocity (points):</label>
               <input type="number" name="velocity" value={formData.velocity} onChange={handleChange} className="form-control" required />
             </div>
             <Button type="submit" variant="primary" disabled={loading}>
               {loading ? "Creating..." : "Create Sprint"}
             </Button>
           </form>
+          {successMessage && <Alert variant="success" className="mt-3">{successMessage}</Alert>}
           {error && <Alert variant="danger" className="mt-3">{formatErrorMessage(error)}</Alert>}
         </Card.Body>
       </Card>
@@ -136,7 +153,7 @@ const ProjectDetail = () => {
                 <ListGroup.Item key={sprint.id}>
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
-                      Sprint from {formatDate(sprint.start_date)} to {formatDate(sprint.end_date)} (Velocity (v točkah): {sprint.velocity})
+                      Sprint from {formatDate(sprint.start_date)} to {formatDate(sprint.end_date)} (Velocity (points): {sprint.velocity})
                     </div>
                     <Button
                       variant="outline-primary"

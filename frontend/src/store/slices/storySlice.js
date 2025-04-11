@@ -146,8 +146,8 @@ export const deleteStory = createAsyncThunk(
         withCredentials: true,
       });
 
-      console.log('Story deleted successfully:', response.data); // Debugging
-      return response.data;
+      console.log('Story marked as deleted:', response.data); // Debugging
+      return { storyId, ...response.data };
     } catch (error) {
       console.error('Error deleting story:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data || 'Failed to delete story');
@@ -182,7 +182,7 @@ export const removeStoryFromSprint = createAsyncThunk(
 const initialState = {
   stories: [],
   backlogStories: {
-    realized: [],
+    finished: [],
     unrealized: {
       active: [],
       unactive: []
@@ -201,7 +201,7 @@ const storySlice = createSlice({
     },
     resetBacklogStories: (state) => {
       state.backlogStories = {
-        realized: [],
+        finished: [],
         unrealized: {
           active: [],
           unactive: []
@@ -253,8 +253,8 @@ const storySlice = createSlice({
         const newStory = action.payload;
         
         if (newStory.status === 'ACCEPTED') {
-          // Add to realized stories
-          state.backlogStories.realized.push(newStory);
+          // Add to finished stories
+          state.backlogStories.finished.push(newStory);
         } else {
           // Add to unrealized stories
           if (newStory.sprint) {
@@ -294,7 +294,7 @@ const storySlice = createSlice({
         
         // Update in the appropriate backlog category
         // First, remove the story from all categories
-        state.backlogStories.realized = state.backlogStories.realized.filter(
+        state.backlogStories.finished = state.backlogStories.finished.filter(
           story => story.id !== updatedStory.id
         );
         state.backlogStories.unrealized.active = state.backlogStories.unrealized.active.filter(
@@ -306,7 +306,7 @@ const storySlice = createSlice({
         
         // Then add to the appropriate category
         if (updatedStory.status === 'ACCEPTED') {
-          state.backlogStories.realized.push(updatedStory);
+          state.backlogStories.finished.push(updatedStory);
         } else if (updatedStory.sprint) {
           state.backlogStories.unrealized.active.push(updatedStory);
         } else {

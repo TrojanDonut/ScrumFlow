@@ -20,17 +20,22 @@ const UserStories = () => {
   const [selectedStory, setSelectedStory] = useState(null);
   const [expandedStoryId, setExpandedStoryId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
   const dispatch = useDispatch();
   
   const { stories, backlogStories } = useSelector((state) => state.stories);
   const { loading, error: sprintError, currentSprint } = useSelector((state) => state.sprints);
   const { tasksByStoryId } = useSelector((state) => state.tasks);
   
-  useEffect(() => {
+  const fetchData = () => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
-    dispatch(fetchBacklogStories(projectId)); // Updated to include projectId
+    dispatch(fetchBacklogStories(projectId));
     dispatch(fetchSprintById({ projectId: projectId, sprintId: sprintId }));
     dispatch(fetchTasksByProject(projectId));
+  };
+  
+  useEffect(() => {
+    fetchData();
   }, [projectId, sprintId]);
 
   const handleUserStoryAdded = (newStory) => {
@@ -55,16 +60,43 @@ const UserStories = () => {
 
   const handleAddStoryToSprint = async (selectedStories) => {
     try {
+      // Calculate current sprint load
+      const currentSprintLoad = stories.reduce((total, story) => 
+        total + (story.story_points || 0), 0);
+      
+      // Calculate additional load from selected stories
+      const additionalLoad = selectedStories.reduce((total, story) => 
+        total + (story.story_points || 0), 0);
+      
+      // Check if we have velocity and if adding would exceed it
+      if (currentSprint && currentSprint.velocity) {
+        if ((currentSprintLoad + additionalLoad) > currentSprint.velocity) {
+          setError(`Cannot add stories: total load (${currentSprintLoad + additionalLoad}) would exceed sprint velocity (${currentSprint.velocity}).`);
+          return;
+        }
+      }
+      
+      // Check if all stories have story points
+      const unestimatedStories = selectedStories.filter(story => !story.story_points);
+      if (unestimatedStories.length > 0) {
+        const storyNames = unestimatedStories.map(s => `"${s.name}"`).join(', ');
+        setError(`Cannot add unestimated stories to sprint: ${storyNames}`);
+        return;
+      }
+      
+      // If all validations pass, add stories to sprint
       for (const story of selectedStories) {
         const updatedStory = { ...story, sprint: sprintId };
         const storyId = story.id;
         await dispatch(updateStory({ storyId: storyId, storyData: updatedStory })).unwrap();
       }
-      // Dispatch an action to add the story to the sprint
-      dispatch(fetchStories({ projectId, sprintId })); // Re-fetch stories
-      dispatch(fetchBacklogStories(projectId)); // Re-fetch backlog stories with projectId
+      
+      // Refresh data
+      dispatch(fetchStories({ projectId, sprintId }));
+      dispatch(fetchBacklogStories(projectId));
+      setError(null);
     } catch (err) {
-      setError('Failed to add stories to sprint.');
+      setError('Failed to add stories to sprint: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -78,6 +110,18 @@ const UserStories = () => {
   const backlogStoriesReady = backlogStories && 
                              (typeof backlogStories === 'object') && 
                              ('unrealized' in backlogStories);
+
+  const handleSprintEditClose = (success) => {
+    setShowEditModal(false);
+    // Refresh data when the sprint edit modal is closed
+    fetchData();
+    
+    if (success) {
+      setSuccessMessage('Sprint updated successfully!');
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(null), 3000);
+    }
+  };
 
   if (loading || currentSprint === null) {
     return <div>Loading...</div>;
@@ -95,7 +139,42 @@ const UserStories = () => {
         Edit Sprint
       </Button>
     </div>
-    <div className="d-flex align-items-start mt-3">
+    
+    {currentSprint && (
+      <div className="mt-3 mb-4 p-3 border rounded bg-light">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <h5 className="mb-0">Sprint Capacity</h5>
+          <div>
+            {/* Calculate current sprint load */}
+            {(() => {
+              const totalPoints = stories.reduce((sum, story) => sum + (story.story_points || 0), 0);
+              const percentUsed = Math.round((totalPoints / currentSprint.velocity) * 100);
+              const isOverloaded = totalPoints > currentSprint.velocity;
+              
+              return (
+                <div className="text-end">
+                  <div className={isOverloaded ? "text-danger fw-bold" : "text-success"}>
+                    Load: {totalPoints} / {currentSprint.velocity} points ({percentUsed}%)
+                  </div>
+                  <div className="progress mt-1" style={{ height: '10px', width: '200px' }}>
+                    <div 
+                      className={`progress-bar ${isOverloaded ? 'bg-danger' : 'bg-success'}`} 
+                      role="progressbar" 
+                      style={{ width: `${Math.min(percentUsed, 100)}%` }} 
+                      aria-valuenow={percentUsed} 
+                      aria-valuemin="0" 
+                      aria-valuemax="100">
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      </div>
+    )}
+    
+    <div className="d-flex align-items-start mb-3">
       <Button
         variant="primary"
         onClick={() => setShowBacklogModal(true)}
@@ -104,6 +183,7 @@ const UserStories = () => {
         Add Story From Backlog
       </Button>
     </div>
+    {successMessage && <Alert variant="success" className="mt-3">{successMessage}</Alert>}
     {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
     <div className="row">
       {states.map((state, index) => (
@@ -133,13 +213,17 @@ const UserStories = () => {
         handleClose={() => setShowBacklogModal(false)}
         backlogStories={backlogStories}
         onAddToSprint={handleAddStoryToSprint}
+        currentSprint={{
+          ...currentSprint,
+          stories: stories // Pass the current stories in the sprint
+        }}
       />
     )}
 
     {/* SprintEditModal */}
     <SprintEditModal
       show={showEditModal}
-      handleClose={() => setShowEditModal(false)}
+      handleClose={handleSprintEditClose}
       sprintId={sprintId}
       projectId={projectId}
       sprintData={currentSprint}

@@ -61,7 +61,7 @@ const Instructions = () => {
               <li><strong>Project Overview:</strong> View project name, description, and creation date</li>
               <li><strong>Team Members:</strong> See a list of members assigned to the project and their roles</li>
               <li><strong>Manage Team Members:</strong> Add or remove team members (if you have appropriate permissions)</li>
-              <li><strong>Create Sprint:</strong> Create a new sprint by specifying start date, end date, and velocity</li>
+              <li><strong>Create Sprint:</strong> Create a new sprint by specifying start date, end date, and velocity (points)</li>
               <li><strong>View Sprints:</strong> See a list of existing sprints for the project</li>
             </ul>
           </Accordion.Body>
@@ -118,7 +118,7 @@ const Instructions = () => {
                 <ol>
                   <li>Navigate to the specific project's detail page</li>
                   <li>Scroll down to the "Create a New Sprint" section</li>
-                  <li>Enter the sprint start date, end date, and velocity</li>
+                  <li>Enter the sprint start date, end date, and velocity (points)</li>
                   <li>Click "Create Sprint" to save</li>
                   <li>The new sprint will appear in the "Existing Sprints" section</li>
                 </ol>

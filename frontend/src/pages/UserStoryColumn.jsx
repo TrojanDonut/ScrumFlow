@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ListGroup, Button, Collapse, Spinner } from 'react-bootstrap';
+import { ListGroup, Button, Collapse, Spinner, Badge } from 'react-bootstrap';
 import { fetchTasks } from '../store/slices/taskSlice';
 
 const UserStoryColumn = ({ 
@@ -26,64 +26,88 @@ const UserStoryColumn = ({
   
   const sprintStatus = getSprintStatus();
 
+  // Display the story points and status
+  const renderStoryInfo = (story) => (
+    <div className="d-flex align-items-center mt-1">
+      {story.story_points ? (
+        <Badge bg="primary" className="me-2">
+          {story.story_points} points
+        </Badge>
+      ) : (
+        <Badge bg="warning" className="me-2">
+          Not estimated
+        </Badge>
+      )}
+      <small className="text-muted">Business Value: {story.business_value}</small>
+    </div>
+  );
+
   return (
     <div className="col">
-      <h3>{title}</h3>
+      <h3>{title.replace('_', ' ')}</h3>
       <ListGroup>
         {stories.map((story) => (
-          <ListGroup.Item key={story.id} className="d-flex flex-column">
+          <ListGroup.Item key={story.id}>
             <div
-              className="d-flex justify-content-between align-items-center"
-              onClick={() => onToggleExpand(story.id)}
               style={{ cursor: 'pointer' }}
+              onClick={() => onToggleExpand(story.id)}
+              className="d-flex justify-content-between align-items-center"
             >
               <div>
-                <strong>{story.name}</strong> - {story.priority}
+                <div className="fw-bold">{story.name}</div>
+                {renderStoryInfo(story)}
+              </div>
+              <div>
+                {sprintStatus !== 'past' && (
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveFromSprint(story.id);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                )}
               </div>
             </div>
             <Collapse in={expandedStoryId === story.id}>
-              <div className="mt-2">
+              <div className="mt-3">
                 <p>
-                  {story.text.split('\n').map((line, index) => (
-                    <React.Fragment key={index}>
-                      {line}
-                      <br />
-                    </React.Fragment>
-                  ))}
+                  <strong>Description:</strong> {story.text}
                 </p>
-
-                {/* Render tasks */}
-                {tasksByStoryId[story.id] && tasksByStoryId[story.id].length > 0 ? (
-                  <div className="mt-3">
-                    <hr/>
-                    <h6>Tasks:</h6>
-                    <ul style={{ paddingLeft: 0, listStylePosition: 'inside' }}>
+                <p>
+                  <strong>Acceptance Tests:</strong> {story.acceptance_tests}
+                </p>
+                <h5 className="mt-3">Tasks</h5>
+                {tasksByStoryId && tasksByStoryId[story.id] ? (
+                  tasksByStoryId[story.id].length > 0 ? (
+                    <ListGroup>
                       {tasksByStoryId[story.id].map((task) => (
-                        <li key={task.id}>
-                          {task.title} - {task.status}
-                        </li>
+                        <ListGroup.Item key={task.id}>
+                          <div className="d-flex justify-content-between">
+                            <div>{task.title}</div>
+                            <div>{task.status}</div>
+                          </div>
+                        </ListGroup.Item>
                       ))}
-                    </ul>
-                  </div>
+                    </ListGroup>
+                  ) : (
+                    <p>No tasks for this story.</p>
+                  )
                 ) : (
-                  <div className="mt-3 text-muted">This story has no tasks.</div>
+                  <Spinner animation="border" size="sm" />
                 )}
-
-                <div className="d-flex justify-content-end mt-2">
-                  {sprintStatus !== 'past' && (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => onRemoveFromSprint(story.id)}
-                    >
-                      Remove from Sprint
-                    </Button>
-                  )}
-                </div>
               </div>
             </Collapse>
           </ListGroup.Item>
         ))}
+        {stories.length === 0 && (
+          <ListGroup.Item className="text-muted">
+            No stories in this category
+          </ListGroup.Item>
+        )}
       </ListGroup>
     </div>
   );

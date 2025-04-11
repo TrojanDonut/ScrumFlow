@@ -61,6 +61,9 @@ class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
         if sprint_id and sprint_id != 'undefined':
             queryset = queryset.filter(sprint_id=sprint_id)
         
+        # Only fetch non-deleted stories
+        queryset = queryset.filter(is_deleted=False)
+        
         # Filter by story ID
         return queryset.filter(id=story_id)
 
@@ -72,10 +75,12 @@ class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
         return obj
     
     def destroy(self, request, *args, **kwargs):
-        """Override destroy method to handle deletion."""
+        """Override destroy method to handle soft deletion."""
         instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response({"message": "Story deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        # Instead of deleting, mark as deleted
+        instance.is_deleted = True
+        instance.save()
+        return Response({"message": "Story marked as deleted successfully."}, status=status.HTTP_200_OK)
 
 
 class RemoveStoryFromSprintView(APIView):
@@ -101,7 +106,7 @@ class UserStoryBacklogView(generics.ListAPIView):
 
     def get_queryset(self):
         """Return all user stories in the backlog."""
-        return UserStory.objects.filter(sprint=None)
+        return UserStory.objects.filter(sprint=None, is_deleted=False)
 
 
 class ProjectBacklogView(generics.ListAPIView):
@@ -116,6 +121,10 @@ class ProjectBacklogView(generics.ListAPIView):
         
         # Get all stories for the project
         all_stories = UserStory.objects.filter(project_id=project_id)
+        
+        # Exclude deleted stories
+        all_stories = all_stories.filter(is_deleted=False)
+        
         print(f"Total stories for project: {all_stories.count()}")
         
         # No longer filtering out stories with sprints
@@ -129,8 +138,8 @@ class ProjectBacklogView(generics.ListAPIView):
         # Categorizing stories according to the new requirements
         stories = serializer.data
         
-        # Divide stories into realized and unrealized
-        realized_stories = [story for story in stories if story['status'] == 'ACCEPTED']
+        # Divide stories into finished and unrealized
+        finished_stories = [story for story in stories if story['status'] == 'ACCEPTED']
         unrealized_stories = [story for story in stories if story['status'] != 'ACCEPTED']
         
         # Divide unrealized stories into active (in a sprint) and unactive (not in a sprint)
@@ -139,14 +148,14 @@ class ProjectBacklogView(generics.ListAPIView):
         
         # Prepare the response data structure
         response_data = {
-            'realized': realized_stories,
+            'finished': finished_stories,
             'unrealized': {
                 'active': active_stories,
                 'unactive': unactive_stories
             }
         }
         
-        print(f"Returning categorized stories: {len(realized_stories)} realized, {len(active_stories)} active unrealized, {len(unactive_stories)} unactive unrealized")
+        print(f"Returning categorized stories: {len(finished_stories)} finished, {len(active_stories)} active unrealized, {len(unactive_stories)} unactive unrealized")
         
         return Response(response_data)
 
@@ -178,7 +187,7 @@ class SprintStoriesView(views.APIView):
     def get(self, request, sprint_id, *args, **kwargs):
         """Retrieve all user stories for a specific sprint."""
         try:
-            stories = UserStory.objects.filter(sprint_id=sprint_id)
+            stories = UserStory.objects.filter(sprint_id=sprint_id, is_deleted=False)
             serializer = UserStorySerializer(stories, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -226,7 +235,7 @@ class UserStoryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         sprint_id = self.kwargs['sprint_id']
-        return self.queryset.filter(sprint_id=sprint_id)
+        return self.queryset.filter(sprint_id=sprint_id, is_deleted=False)
 
     def perform_create(self, serializer):
         """Override to set the created_by field."""
