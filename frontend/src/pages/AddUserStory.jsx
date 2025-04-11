@@ -25,7 +25,8 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
     status: 'NOT_STARTED',
     sprint: sprintId || null,
     assigned_to: null, // New field for assigned developer
-    story_points: ''
+    story_points: '',
+    project: params.projectId,
   });
   const [formData, setFormData] = useState(getDefaultState());
 
