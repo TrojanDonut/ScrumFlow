@@ -1,7 +1,17 @@
-import React from 'react';
-import { ListGroup, Button, Collapse } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { ListGroup, Button, Collapse, Spinner } from 'react-bootstrap';
+import { fetchTasks } from '../store/slices/taskSlice';
 
-const UserStoryColumn = ({ title, stories, onEdit, onToggleExpand, expandedStoryId, onRemoveFromSprint }) => {
+const UserStoryColumn = ({ 
+  title, 
+  stories, 
+  onEdit, 
+  onToggleExpand, 
+  expandedStoryId, 
+  onRemoveFromSprint,
+  tasksByStoryId,
+}) => {
   return (
     <div className="col">
       <h3>{title}</h3>
@@ -27,6 +37,24 @@ const UserStoryColumn = ({ title, stories, onEdit, onToggleExpand, expandedStory
                     </React.Fragment>
                   ))}
                 </p>
+
+                {/* Render tasks */}
+                {tasksByStoryId[story.id] && tasksByStoryId[story.id].length > 0 ? (
+                  <div className="mt-3">
+                    <hr/>
+                    <h6>Tasks:</h6>
+                    <ul style={{ paddingLeft: 0, listStylePosition: 'inside' }}>
+                      {tasksByStoryId[story.id].map((task) => (
+                        <li key={task.id}>
+                          {task.title} - {task.status}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="mt-3 text-muted">This story has no tasks.</div>
+                )}
+
                 <div className="d-flex justify-content-end mt-2">
                   <Button
                     variant="outline-primary"
