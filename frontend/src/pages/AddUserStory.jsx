@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Button, Form, Alert, Modal } from 'react-bootstrap';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { updateStory, createStory, fetchStories, fetchBacklogStories } from '../store/slices/storySlice';
-import { fetchProjectDevelopers } from '../store/slices/userSlice';
 
 const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEditMode, projectId: propProjectId }) => {
   const params = useParams();
   const projectId = propProjectId || params.projectId;
   const sprintId = params.sprintId;
   const dispatch = useDispatch();
+  const { backlogStories, error: storyError } = useSelector(state => state.stories);
 
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,8 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
     status: 'NOT_STARTED',
     sprint: sprintId || null,
     assigned_to: null, // New field for assigned developer
-    story_points: ''
+    story_points: '',
+    project: params.projectId,
   });
   const [formData, setFormData] = useState(getDefaultState());
 
@@ -40,29 +41,11 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
         business_value: userStoryData.business_value || defaultState.business_value,
         status: userStoryData.status || defaultState.status,
         sprint: userStoryData.sprint || defaultState.sprint,
-        story_points: userStoryData.story_points || defaultState.story_points,
-        assigned_to: userStoryData.assigned_to || defaultState.assigned_to, // Pre-fill assigned developer
       });
     } else {
       setFormData(getDefaultState());
     }
   }, [isEditMode, userStoryData, sprintId]);
-
-  useEffect(() => {
-    // Fetch developers for the project
-    const fetchDevelopers = async () => {
-      try {
-        const result = await dispatch(fetchProjectDevelopers(projectId)).unwrap();
-        setDevelopers(result); // Store developers in state
-      } catch (err) {
-        console.error('Failed to fetch developers:', err);
-      }
-    };
-
-    if (projectId) {
-      fetchDevelopers();
-    }
-  }, [projectId, dispatch]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -144,21 +127,6 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Status</Form.Label>
-            <Form.Select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              required
-            >
-              <option value="NOT_STARTED">Not Started</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="DONE">Done</option>
-              <option value="ACCEPTED">Accepted</option>
-              <option value="REJECTED">Rejected</option>
-            </Form.Select>
-          </Form.Group>
-          <Form.Group className="mb-3">
             <Form.Label>Acceptance Tests</Form.Label>
             <Form.Control
               as="textarea"
@@ -183,41 +151,16 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
             </Form.Select>
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Business Value (€)</Form.Label>
+            <Form.Label>Business Value</Form.Label>
             <Form.Control
               type="number"
               name="business_value"
               value={formData.business_value}
               onChange={handleChange}
-              required
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
-          <Form.Label>Story Points</Form.Label>
-            <Form.Control
-              type="number"
-              name="story_points"
-              value={formData.story_points}
-              onChange={handleChange}
               min="1"
-              max="50"
+              max="10"
               required
             />
-          </Form.Group>
-                    <Form.Group className="mb-3">
-            <Form.Label>Assign Developer</Form.Label>
-            <Form.Select
-              name="assigned_to"
-              value={formData.assigned_to || ''}
-              onChange={handleChange}
-            >
-              <option value="">Unassigned</option>
-              {developers.map((dev) => (
-                <option key={dev.id} value={dev.id}>
-                  {dev.username}
-                </option>
-              ))}
-            </Form.Select>
           </Form.Group>
           <Button type="submit" variant="primary" disabled={loading}>
             {loading ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update User Story' : 'Add User Story')}
@@ -225,6 +168,7 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
         </Form>
 
         {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
+        {storyError && <Alert variant="danger" className="mt-3">{storyError}</Alert>}
       </Modal.Body>
     </Modal>
   );

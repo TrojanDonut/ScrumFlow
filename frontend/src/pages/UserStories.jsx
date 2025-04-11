@@ -37,12 +37,6 @@ const UserStories = () => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
   };
 
-  const handleEditStory = (story) => {
-    setSelectedStory(story);
-    setIsEditMode(true);
-    setShowModal(true);
-  };
-
   const toggleExpandStory = (storyId) => {
     setExpandedStoryId(expandedStoryId === storyId ? null : storyId);
   };
@@ -85,7 +79,7 @@ const UserStories = () => {
                              (typeof backlogStories === 'object') && 
                              ('unrealized' in backlogStories);
 
-  if (loading && currentSprint === null) {
+  if (loading || currentSprint === null) {
     return <div>Loading...</div>;
   }
   return (
@@ -104,17 +98,6 @@ const UserStories = () => {
     <div className="d-flex align-items-start mt-3">
       <Button
         variant="primary"
-        className="me-2"
-        onClick={() => {
-          setSelectedStory(null);
-          setIsEditMode(false);
-          setShowModal(true);
-        }}
-      >
-        Create New User Story
-      </Button>
-      <Button
-        variant="primary"
         onClick={() => setShowBacklogModal(true)}
         disabled={!currentSprint?.is_active || !backlogStoriesReady}
       >
@@ -128,7 +111,6 @@ const UserStories = () => {
           key={state}
           title={state}
           stories={categorizedStories[index]}
-          onEdit={handleEditStory}
           onToggleExpand={toggleExpandStory}
           expandedStoryId={expandedStoryId}
           onRemoveFromSprint={handleRemoveFromSprint}

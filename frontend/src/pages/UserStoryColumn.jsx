@@ -11,7 +11,21 @@ const UserStoryColumn = ({
   expandedStoryId, 
   onRemoveFromSprint,
   tasksByStoryId,
+  sprint,
 }) => {
+  const getSprintStatus = () => {
+    if (!sprint) return 'active';
+    const now = new Date();
+    if (new Date(sprint.start_date) > now) {
+      return 'future';
+    } else if (new Date(sprint.end_date) < now) {
+      return 'past';
+    }
+    return 'active';
+  };
+  
+  const sprintStatus = getSprintStatus();
+
   return (
     <div className="col">
       <h3>{title}</h3>
@@ -56,25 +70,15 @@ const UserStoryColumn = ({
                 )}
 
                 <div className="d-flex justify-content-end mt-2">
-                  <Button
-                    variant="outline-primary"
-                    className="me-2"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering expand/collapse
-                      onEdit(story);
-                    }}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="danger"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering expand/collapse
-                      onRemoveFromSprint(story.id);
-                    }}
-                  >
-                    Remove
-                  </Button>
+                  {sprintStatus !== 'past' && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => onRemoveFromSprint(story.id)}
+                    >
+                      Remove from Sprint
+                    </Button>
+                  )}
                 </div>
               </div>
             </Collapse>

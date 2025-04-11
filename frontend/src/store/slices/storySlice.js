@@ -276,7 +276,7 @@ const storySlice = createSlice({
       })
       .addCase(createStory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to create story';
+        state.error = 'Failed to create story';
       })
       .addCase(updateStory.pending, (state) => {
         state.loading = true;
