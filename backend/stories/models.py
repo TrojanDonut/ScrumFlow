@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from sprints.models import Sprint
 from projects.models import Project
+from django.core.exceptions import ValidationError
 
 
 class UserStory(models.Model):
@@ -70,6 +71,19 @@ class UserStory(models.Model):
     def is_completed(self):
         """Check if the story is considered complete"""
         return self.status in [self.Status.DONE, self.Status.ACCEPTED]
+    
+    def clean(self):
+        """Custom validation to ensure that a user story is not assigned to multiple sprints"""
+        if UserStory.objects.exclude(pk=self.pk).filter(
+            name__iexact=self.name,
+            project=self.project,
+            ).exists():
+            raise ValidationError({'name': 'Name must be unique (case-insensitive).'})
+    
+    def save(self, *args, **kwargs):
+        """Override save method to enforce unique constraint on name"""
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class UserStoryComment(models.Model):

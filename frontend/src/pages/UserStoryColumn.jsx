@@ -1,7 +1,7 @@
 import React from 'react';
 import { ListGroup, Button, Collapse } from 'react-bootstrap';
 
-const UserStoryColumn = ({ title, stories, onEdit, onToggleExpand, expandedStoryId, onRemoveFromSprint }) => {
+const UserStoryColumn = ({ title, stories, onToggleExpand, expandedStoryId, onRemoveFromSprint }) => {
   return (
     <div className="col">
       <h3>{title}</h3>
@@ -28,16 +28,6 @@ const UserStoryColumn = ({ title, stories, onEdit, onToggleExpand, expandedStory
                   ))}
                 </p>
                 <div className="d-flex justify-content-end mt-2">
-                  <Button
-                    variant="outline-primary"
-                    className="me-2"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering expand/collapse
-                      onEdit(story);
-                    }}
-                  >
-                    Edit
-                  </Button>
                   <Button
                     variant="danger"
                     onClick={(e) => {
