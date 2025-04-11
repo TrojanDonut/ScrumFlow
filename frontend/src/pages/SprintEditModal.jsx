@@ -10,6 +10,18 @@ const SprintEditModal = ({ show, handleClose, sprintId, projectId, sprintData })
   const [error, setError] = useState(null);
   const dispatch = useDispatch();
 
+  // Determie if the sprint is in the past, active or future
+  const getSprintStatus = () => {
+    const now = new Date();
+    if (new Date(startDate) > now) {
+      return 'future';
+    } else if (new Date(endDate) < now) {
+      return 'past';
+    }
+    return 'active';
+  };
+  const sprintStatus = getSprintStatus();
+
   useEffect(() => {
     if (sprintData) {
       setStartDate(sprintData.start_date || '');
@@ -57,6 +69,7 @@ const SprintEditModal = ({ show, handleClose, sprintId, projectId, sprintData })
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
+              disabled={sprintStatus !== 'future'} // Disable if not future
             />
           </Form.Group>
           <Form.Group controlId="endDate" className="mt-3">
@@ -65,14 +78,16 @@ const SprintEditModal = ({ show, handleClose, sprintId, projectId, sprintData })
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
+              disabled={sprintStatus !== 'future'} // Disable if not future
             />
           </Form.Group>
           <Form.Group controlId="velocity" className="mt-3">
-            <Form.Label>Velocity</Form.Label>
+            <Form.Label>Velocity (v točkah)</Form.Label>
             <Form.Control
               type="number"
               value={velocity}
               onChange={(e) => setVelocity(e.target.value)}
+              disabled={sprintStatus === 'past'}
             />
           </Form.Group>
         </Form>
