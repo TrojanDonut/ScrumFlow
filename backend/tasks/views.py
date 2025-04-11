@@ -40,6 +40,23 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TaskSerializer
 
 
+class ProjectTasksView(generics.ListAPIView):
+    """
+    get:
+    Return a list of all tasks for all user stories belonging to a specific project.
+    """
+    serializer_class = TaskSerializer
+
+    def get_queryset(self):
+        project_id = self.kwargs['project_id']
+        return Task.objects.filter(
+            story__project_id=project_id
+        ) | Task.objects.filter(
+            story__project_id__isnull=True,
+            story__sprint__project_id=project_id
+        )
+
+
 class TaskAcceptView(APIView):
     """
     post:

@@ -2,8 +2,10 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from projects.models import Project, ProjectMember
+from sprints.models import Sprint
 from stories.models import UserStory
 from tasks.models import Task
+import datetime
 
 User = get_user_model()
 
@@ -110,7 +112,7 @@ class Command(BaseCommand):
                         f'Error creating sample project: {str(e)}'
                     )
                 )
-
+            
             # Create initial user stories
             try:
                 created_by_user = User.objects.get(username='product_owner')
@@ -146,6 +148,38 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.WARNING(
                         f'Error creating initial user story: {str(e)}'
+                    )
+                )
+
+            # Create initial sprint
+            try:
+                if not Sprint.objects.filter(start_date='2025-05-01').exists():
+                    project = Project.objects.get(name='Sample Project')
+
+                    initial_sprint = Sprint.objects.create(
+                        start_date=datetime.date(2025, 5, 1),
+                        end_date=datetime.date(2025, 5, 2),
+                        project=project,
+                        velocity=15,
+                    )
+
+                    user_story = UserStory.objects.get(name='Initial User Story')
+                    user_story.sprint = initial_sprint
+                    user_story.save()
+
+                    self.stdout.write(
+                        self.style.SUCCESS(
+                            f'Initial sprint created!'
+                        )
+                    )
+                else:
+                    self.stdout.write(
+                        self.style.SUCCESS('Initial sprint already exists')
+                    )
+            except Exception as e:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f'Error creating initial sprint: {str(e)}'
                     )
                 )
 

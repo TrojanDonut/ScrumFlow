@@ -4,14 +4,60 @@ import axios from 'axios';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // Async thunks
-export const fetchTasks = createAsyncThunk(
-  'tasks/fetchTasks',
-  async (storyId, { rejectWithValue }) => {
+export const fetchTasksByProject = createAsyncThunk(
+  'tasks/fetchTasksByProject',
+  async (projectId, { rejectWithValue, getState }) => {
     try {
-      const response = await axios.get(`${API_URL}/stories/${storyId}/tasks/`);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/projects/${projectId}/tasks/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+
+      // Group tasks by story_id
+      const tasksByStoryId = response.data.reduce((acc, task) => {
+        if (!acc[task.story]) {
+          acc[task.story] = [];
+        }
+        acc[task.story].push(task);
+        return acc;
+      }, {});
+
+      return tasksByStoryId;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch tasks for project');
+    }
+  }
+);
+
+export const fetchTasksStory = createAsyncThunk(
+  'tasks/fetchTasks',
+  async (storyId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/stories/${storyId}/tasks/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || 'Failed to fetch tasks for story');
     }
   }
 );
@@ -40,15 +86,14 @@ export const updateTaskStatus = createAsyncThunk(
   }
 );
 
-const initialState = {
-  tasks: [],
-  loading: false,
-  error: null,
-};
-
 const taskSlice = createSlice({
   name: 'tasks',
-  initialState,
+  initialState: {
+    tasksByStoryId: {},
+    loadingByProjectId: {},
+    loadingByStoryId: {},
+    error: null,
+  },
   reducers: {
     clearTaskError: (state) => {
       state.error = null;
@@ -56,18 +101,36 @@ const taskSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch tasks reducers
-      .addCase(fetchTasks.pending, (state) => {
-        state.loading = true;
+      // Fetch tasks by project reducers
+      .addCase(fetchTasksByProject.pending, (state, action) => {
+        console.log(`Fetching tasks for project ${action.meta.arg}`);
+        state.loadingByProjectId[action.meta.arg] = true;
         state.error = null;
       })
-      .addCase(fetchTasks.fulfilled, (state, action) => {
-        state.loading = false;
-        state.tasks = action.payload;
+      .addCase(fetchTasksByProject.fulfilled, (state, action) => {
+        console.log(`Tasks fetched for project ${action.meta.arg}:`, action.payload);
+        state.tasksByStoryId = action.payload; // Update tasks grouped by story_id
+        state.loadingByProjectId[action.meta.arg] = false;
       })
-      .addCase(fetchTasks.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || 'Failed to fetch tasks';
+      .addCase(fetchTasksByProject.rejected, (state, action) => {
+        console.error(`Failed to fetch tasks for project ${action.meta.arg}:`, action.payload);
+        state.loadingByProjectId[action.meta.arg] = false;
+        state.error = action.payload || 'Failed to fetch tasks for project';
+      })  
+    
+    // Fetch tasks reducers
+      .addCase(fetchTasksStory.pending, (state, action) => {
+        console.log(`Fetching tasks for story ${action.meta.arg}`);
+        state.loadingByStoryId[action.meta.arg] = true;
+      })
+      .addCase(fetchTasksStory.fulfilled, (state, action) => {
+        console.log(`Tasks fetched for story ${action.meta.arg}:`, action.payload.tasks);
+        state.tasksByStoryId[action.payload.storyId] = action.payload.tasks;
+        state.loadingByStoryId[action.payload.storyId] = false;
+      })
+      .addCase(fetchTasksStory.rejected, (state, action) => {
+        console.error(`Failed to fetch tasks for story ${action.meta.arg}:`, action.payload);
+        state.loadingByStoryId[action.meta.arg] = false;
       })
       
       // Create task reducers
