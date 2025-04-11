@@ -22,7 +22,7 @@ const UserStories = () => {
   const dispatch = useDispatch();
   const { stories, backlogStories } = useSelector((state) => state.stories);
   const { loading, error: sprintError, currentSprint } = useSelector((state) => state.sprints);
-  
+
   
   useEffect(() => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
@@ -76,7 +76,7 @@ const UserStories = () => {
                              (typeof backlogStories === 'object') && 
                              ('unrealized' in backlogStories);
 
-  if (loading && currentSprint === null) {
+  if (loading || currentSprint === null) {
     return <div>Loading...</div>;
   }
   return (
@@ -111,6 +111,7 @@ const UserStories = () => {
           onToggleExpand={toggleExpandStory}
           expandedStoryId={expandedStoryId}
           onRemoveFromSprint={handleRemoveFromSprint}
+          sprint={currentSprint}
         />
       ))}
     </div>

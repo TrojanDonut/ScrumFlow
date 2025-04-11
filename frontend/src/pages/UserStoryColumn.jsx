@@ -1,7 +1,24 @@
 import React from 'react';
 import { ListGroup, Button, Collapse } from 'react-bootstrap';
+import { useSelector } from 'react-redux';
 
-const UserStoryColumn = ({ title, stories, onToggleExpand, expandedStoryId, onRemoveFromSprint }) => {
+const UserStoryColumn = ({ title, stories, onToggleExpand, expandedStoryId, onRemoveFromSprint, sprint }) => {
+  const getSprintStatus = () => {
+    const now = new Date();
+    console.log('Current Date:', now);
+    console.log('Sprint Start Date:', sprint.start_date);
+    console.log('Sprint End Date:', sprint.end_date);
+    console.log(sprint);
+    if (new Date(sprint.start_date) > now) {
+      return 'future';
+    } else if (new Date(sprint.end_date) < now) {
+      return 'past';
+    }
+    return 'active';
+  };
+  const sprintStatus = getSprintStatus();
+  console.log('Sprint Status:', sprintStatus);
+  console.log('Sprint:', sprint);
   return (
     <div className="col">
       <h3>{title}</h3>
@@ -28,15 +45,15 @@ const UserStoryColumn = ({ title, stories, onToggleExpand, expandedStoryId, onRe
                   ))}
                 </p>
                 <div className="d-flex justify-content-end mt-2">
+                {sprintStatus !== 'past' && (
                   <Button
                     variant="danger"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering expand/collapse
-                      onRemoveFromSprint(story.id);
-                    }}
+                    size="sm"
+                    onClick={() => onRemoveFromSprint(story.id)}
                   >
-                    Remove
+                    Remove from Sprint
                   </Button>
+                )}
                 </div>
               </div>
             </Collapse>
