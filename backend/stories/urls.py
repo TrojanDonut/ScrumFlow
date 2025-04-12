@@ -1,23 +1,42 @@
-from django.urls import path, include
+from django.urls import path
 from . import views
-from rest_framework.routers import DefaultRouter
-from .views import UserStoryViewSet
-
-app_name = 'stories'
-
-router = DefaultRouter()
-router.register(r'user-stories', UserStoryViewSet, basename='user-story')
 
 urlpatterns = [
-    path('stories/', views.UserStoryListCreateView.as_view(), name='story-list-create'),
-    path('stories/<int:pk>/', views.UserStoryDetailView.as_view(), name='story-detail'),
-    path('stories/<int:story_id>/comments/', views.UserStoryCommentListCreateView.as_view(), name='story-comment-list-create'),
-    path('sprints/<int:sprint_id>/stories/', views.SprintStoriesView.as_view(), name='sprint-stories'),
-    path('backlog/', views.UserStoryBacklogView.as_view(), name='story-backlog'),
-    path('projects/<int:project_id>/backlog/', views.ProjectBacklogView.as_view(), name='product-backlog'),
-    path('projects/<int:project_id>/user-stories/<int:story_id>/', views.UserStoryDetailView.as_view(), name='project-story-detail'),
-    path('stories/<int:story_id>/estimate/', views.StoryEstimateView.as_view(), name='story-estimate'),
-    path('stories/<int:story_id>/planning-poker/', views.PlanningPokerView.as_view(), name='planning-poker'),
-    path('sprints/<int:sprint_id>/', include(router.urls)),
-    path('stories/<int:story_id>/remove-from-sprint/', views.RemoveStoryFromSprintView.as_view(), name='remove-story-from-sprint'),
+    # User Story endpoints
+    path(
+        'user-stories/',
+        views.UserStoryListCreateView.as_view(),
+        name='user-stories-list-create'
+    ),
+    path(
+        'user-stories/<int:pk>/',
+        views.UserStoryDetailView.as_view(),
+        name='user-story-detail'
+    ),
+    path(
+        'user-stories/<int:story_id>/remove-from-sprint/',
+        views.RemoveStoryFromSprintView.as_view(),
+        name='remove-story-from-sprint'
+    ),
+    path(
+        'user-stories/<int:story_id>/update-points/',
+        views.UserStoryUpdatePointsView.as_view(),
+        name='user-story-update-points'
+    ),
+    path(
+        'user-stories/<int:story_id>/update-status/',
+        views.UserStoryUpdateStatusView.as_view(),
+        name='user-story-update-status'
+    ),
+    path(
+        'backlog/',
+        views.UserStoryBacklogView.as_view(),
+        name='story-backlog'
+    ),
+    # Sprint stories endpoint
+    path(
+        'sprints/<int:sprint_id>/stories/',
+        views.SprintStoriesView.as_view(),
+        name='sprint-stories'
+    ),
 ]
