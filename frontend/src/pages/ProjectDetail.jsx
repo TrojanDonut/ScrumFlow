@@ -34,7 +34,16 @@ const ProjectDetail = () => {
     e.preventDefault();
     
     try {
-      await dispatch(createSprint({ projectId: id, sprintData: formData })).unwrap();
+      // Add project ID to the sprint data
+      const sprintDataWithProject = {
+        ...formData,
+        project: parseInt(id, 10)  // Make sure the project ID is an integer
+      };
+      
+      await dispatch(createSprint({ 
+        projectId: id, 
+        sprintData: sprintDataWithProject 
+      })).unwrap();
       
       // Reset form
       setFormData({ start_date: "", end_date: "", velocity: 0 });

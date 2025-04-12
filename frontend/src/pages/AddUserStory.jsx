@@ -66,7 +66,7 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
       ...formData,
       sprint: formData.sprint ? parseInt(formData.sprint, 10) : null,
       business_value: parseInt(formData.business_value, 10),
-      story_points: parseInt(formData.story_points, 10),
+      story_points: formData.story_points ? parseInt(formData.story_points, 10) : null,
       project: projectId,
     };
 

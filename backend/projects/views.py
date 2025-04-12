@@ -14,8 +14,13 @@ class ProjectListCreateView(generics.ListCreateAPIView):
     post:
     Create a new project instance.
     """
-    queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    def get_queryset(self):
+        # Only return projects where the user is a member
+        return Project.objects.filter(
+            members__user=self.request.user
+        ).distinct()
 
     def perform_create(self, serializer):
         product_owner = self.request.data.get('product_owner')

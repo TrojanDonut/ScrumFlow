@@ -171,91 +171,91 @@ const ProductBacklog = () => {
 
     return (
       <>
-        {Object.keys(priorityGroups).map(priority => (
-          <Card key={priority} className="mb-3">
-            <Card.Header className="d-flex justify-content-between align-items-center">
-              <span>
-                <Badge bg={getPriorityBadgeVariant(priority)} className="me-2">
-                  {formatPriorityLabel(priority)}
-                </Badge>
-                <span className="fw-bold">
-                  {priorityGroups[priority].length} {priorityGroups[priority].length === 1 ? 'story' : 'stories'}
+        {Object.keys(priorityGroups).map(priority => {
+          // Skip empty priority groups
+          if (priorityGroups[priority].length === 0) return null;
+          
+          return (
+            <Card key={priority} className="mb-3">
+              <Card.Header className="d-flex justify-content-between align-items-center">
+                <span>
+                  <Badge bg={getPriorityBadgeVariant(priority)} className="me-2">
+                    {formatPriorityLabel(priority)}
+                  </Badge>
+                  <span className="fw-bold">
+                    {priorityGroups[priority].length} {priorityGroups[priority].length === 1 ? 'story' : 'stories'}
+                  </span>
                 </span>
-              </span>
-            </Card.Header>
-            <ListGroup variant="flush">
-              {priorityGroups[priority].map(story => (
-                <ListGroup.Item 
-                  key={story.id}
-                  className="d-flex justify-content-between align-items-center"
-                >
-                  <div>
-                    <h6>{story.name}</h6>
-                    <small>Business Value: {story.business_value}</small>
-                    {story.story_points ? (
-                      <small className="ms-3">Story Points: {story.story_points}</small>
-                    ) : (
-                      <small className="ms-3 text-warning">Not Estimated</small>
-                    )}
-                    {story.sprint && (
-                      <Badge bg="info" className="ms-3">In Sprint</Badge>
-                    )}
-                    <Badge bg={story.status === 'ACCEPTED' ? 'success' : 'secondary'} className="ms-3">
-                      {story.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                  <div>
-                  {!story.sprint && ( // Prikaži gumbe samo za zgodbe brez sprinta
-                      <>
-                        <Button 
-                          variant="outline-primary" 
-                          size="sm" 
-                          className="me-2"
-                          onClick={() => handleEditStory(story)}
-                        >
-                          Edit
-                        </Button>
-                        
-                        <Button 
-                          variant="outline-info" 
-                          size="sm" 
-                          className="me-2"
-                          onClick={() => handleOpenEstimateModal(story)}
-                        >
-                          {story.story_points ? 'Re-estimate' : 'Estimate'}
-                        </Button>
-                      </>
-                  )}
-                    
-                    <Button 
-                      variant="outline-primary" 
-                      size="sm" 
-                      className="me-2"
-                      as={Link} 
-                      to={`/projects/${id}/user-stories/${story.id}`}
-                    >
-                      Details
-                    </Button>
-                    {!story.sprint && ( // Prikaži gumb samo za zgodbe brez sprinta
-                    <Button 
-                        variant="danger" 
+              </Card.Header>
+              <ListGroup variant="flush">
+                {priorityGroups[priority].map(story => (
+                  <ListGroup.Item 
+                    key={story.id}
+                    className="d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      <h6>{story.name}</h6>
+                      <small>Business Value: {story.business_value}</small>
+                      {story.story_points ? (
+                        <small className="ms-3">Story Points: {story.story_points}</small>
+                      ) : (
+                        <small className="ms-3 text-warning">Not Estimated</small>
+                      )}
+                      {story.sprint && (
+                        <Badge bg="info" className="ms-3">In Sprint</Badge>
+                      )}
+                      <Badge bg={story.status === 'ACCEPTED' ? 'success' : 'secondary'} className="ms-3">
+                        {story.status.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                    <div>
+                      {!story.sprint && (
+                        <>
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            className="me-2"
+                            onClick={() => handleEditStory(story)}
+                          >
+                            Edit
+                          </Button>
+                          
+                          <Button 
+                            variant="outline-info" 
+                            size="sm" 
+                            className="me-2"
+                            onClick={() => handleOpenEstimateModal(story)}
+                          >
+                            {story.story_points ? 'Re-estimate' : 'Estimate'}
+                          </Button>
+                        </>
+                      )}
+                      
+                      <Button 
+                        variant="outline-primary" 
                         size="sm" 
-                        onClick={() => handleRemoveStory(story.id)}
+                        className="me-2"
+                        as={Link} 
+                        to={`/projects/${id}/user-stories/${story.id}`}
                       >
-                        Remove
+                        Details
                       </Button>
-                    )}
-                  </div>
-                </ListGroup.Item>
-              ))}
-              {priorityGroups[priority].length === 0 && (
-                <ListGroup.Item className="text-muted">
-                  No stories with this priority
-                </ListGroup.Item>
-              )}
-            </ListGroup>
-          </Card>
-        ))}
+                      {!story.sprint && (
+                        <Button 
+                          variant="danger" 
+                          size="sm" 
+                          onClick={() => handleRemoveStory(story.id)}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </Card>
+          );
+        })}
       </>
     );
   };

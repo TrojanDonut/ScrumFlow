@@ -245,6 +245,24 @@ class UserStoryBacklogView(generics.ListAPIView):
         return UserStory.objects.filter(sprint=None, is_deleted=False)
 
 
+class ProjectBacklogView(generics.ListAPIView):
+    """API view for listing user stories in a specific project's backlog."""
+    serializer_class = UserStorySerializer
+    
+    def get_permissions(self):
+        """Any authenticated project member can view the project backlog"""
+        return [IsAuthenticated(), IsProjectMember()]
+
+    def get_queryset(self):
+        """Return user stories in the backlog for a specific project."""
+        project_id = self.kwargs.get('project_id')
+        return UserStory.objects.filter(
+            project_id=project_id,
+            sprint__isnull=True,  # Not in any sprint
+            is_deleted=False
+        ).order_by('-created_at')  # Order by most recent first
+
+
 class UserStoryUpdateStatusView(APIView):
     """API view for updating the status of a user story."""
     

@@ -27,6 +27,10 @@ const UserStories = () => {
   const { loading, error: sprintError, currentSprint } = useSelector((state) => state.sprints);
   const { tasksByStoryId } = useSelector((state) => state.tasks);
   
+  // Add debug logging
+  console.log("UserStories - tasksByStoryId:", tasksByStoryId);
+  console.log("UserStories - stories:", stories);
+  
   const fetchData = () => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
     dispatch(fetchBacklogStories(projectId));
@@ -36,7 +40,7 @@ const UserStories = () => {
   
   useEffect(() => {
     fetchData();
-  }, [projectId, sprintId]);
+  }, [projectId, sprintId, dispatch]);
 
   const handleUserStoryAdded = (newStory) => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));

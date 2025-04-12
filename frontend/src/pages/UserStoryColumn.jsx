@@ -13,6 +13,10 @@ const UserStoryColumn = ({
   tasksByStoryId,
   sprint,
 }) => {
+  // Add debug logging to see what data is received
+  console.log(`UserStoryColumn ${title} - tasksByStoryId:`, tasksByStoryId);
+  console.log(`UserStoryColumn ${title} - stories:`, stories);
+  
   const getSprintStatus = () => {
     if (!sprint) return 'active';
     const now = new Date();
@@ -81,23 +85,33 @@ const UserStoryColumn = ({
                   <strong>Acceptance Tests:</strong> {story.acceptance_tests}
                 </p>
                 <h5 className="mt-3">Tasks</h5>
-                {tasksByStoryId && tasksByStoryId[story.id] ? (
-                  tasksByStoryId[story.id].length > 0 ? (
+                {tasksByStoryId ? (
+                  tasksByStoryId[story.id] && tasksByStoryId[story.id].length > 0 ? (
                     <ListGroup>
                       {tasksByStoryId[story.id].map((task) => (
                         <ListGroup.Item key={task.id}>
-                          <div className="d-flex justify-content-between">
-                            <div>{task.title}</div>
-                            <div>{task.status}</div>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <div className="fw-semibold">{task.title}</div>
+                            <Badge bg={
+                              task.status === 'COMPLETED' ? 'success' : 
+                              task.status === 'IN_PROGRESS' ? 'warning' : 
+                              task.status === 'UNASSIGNED' ? 'secondary' : 'info'
+                            }>
+                              {task.status.replace('_', ' ')}
+                            </Badge>
                           </div>
+                          {task.description && <small className="text-muted d-block mt-1">{task.description}</small>}
                         </ListGroup.Item>
                       ))}
                     </ListGroup>
                   ) : (
-                    <p>No tasks for this story.</p>
+                    <p className="text-muted">This story has no tasks yet. Tasks help track and manage the implementation work.</p>
                   )
                 ) : (
-                  <Spinner animation="border" size="sm" />
+                  <div className="text-center my-3">
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    <small>Loading tasks...</small>
+                  </div>
                 )}
               </div>
             </Collapse>

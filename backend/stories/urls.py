@@ -33,6 +33,11 @@ urlpatterns = [
         views.UserStoryBacklogView.as_view(),
         name='story-backlog'
     ),
+    path(
+        'projects/<int:project_id>/backlog/',
+        views.ProjectBacklogView.as_view(),
+        name='project-backlog'
+    ),
     # Sprint stories endpoint
     path(
         'sprints/<int:sprint_id>/stories/',

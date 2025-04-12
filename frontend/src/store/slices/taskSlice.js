@@ -24,12 +24,20 @@ export const fetchTasksByProject = createAsyncThunk(
 
       // Group tasks by story_id
       const tasksByStoryId = response.data.reduce((acc, task) => {
-        if (!acc[task.story]) {
-          acc[task.story] = [];
+        if (task.story) {  // Make sure story ID exists
+          if (!acc[task.story]) {
+            acc[task.story] = [];
+          }
+          acc[task.story].push(task);
+        } else {
+          console.warn("Task without story ID found:", task);
         }
-        acc[task.story].push(task);
         return acc;
       }, {});
+
+      // Add debug logging
+      console.log("Fetched tasks:", response.data);
+      console.log("Organized tasks by story ID:", tasksByStoryId);
 
       return tasksByStoryId;
     } catch (error) {
@@ -111,14 +119,15 @@ const taskSlice = createSlice({
         console.log(`Tasks fetched for project ${action.meta.arg}:`, action.payload);
         state.tasksByStoryId = action.payload; // Update tasks grouped by story_id
         state.loadingByProjectId[action.meta.arg] = false;
+        console.log("Current tasksByStoryId state:", state.tasksByStoryId);
       })
       .addCase(fetchTasksByProject.rejected, (state, action) => {
         console.error(`Failed to fetch tasks for project ${action.meta.arg}:`, action.payload);
         state.loadingByProjectId[action.meta.arg] = false;
         state.error = action.payload || 'Failed to fetch tasks for project';
-      })  
-    
-    // Fetch tasks reducers
+      })
+
+      // Fetch tasks reducers
       .addCase(fetchTasksStory.pending, (state, action) => {
         console.log(`Fetching tasks for story ${action.meta.arg}`);
         state.loadingByStoryId[action.meta.arg] = true;
@@ -132,7 +141,7 @@ const taskSlice = createSlice({
         console.error(`Failed to fetch tasks for story ${action.meta.arg}:`, action.payload);
         state.loadingByStoryId[action.meta.arg] = false;
       })
-      
+
       // Create task reducers
       .addCase(createTask.pending, (state) => {
         state.loading = true;
@@ -146,7 +155,7 @@ const taskSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to create task';
       })
-      
+
       // Update task status reducers
       .addCase(updateTaskStatus.pending, (state) => {
         state.loading = true;
@@ -167,4 +176,4 @@ const taskSlice = createSlice({
 });
 
 export const { clearTaskError } = taskSlice.actions;
-export default taskSlice.reducer; 
+export default taskSlice.reducer;
