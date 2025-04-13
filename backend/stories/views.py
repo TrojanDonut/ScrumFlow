@@ -6,6 +6,13 @@ from .models import UserStory
 from .serializers import UserStorySerializer
 import logging
 from django.shortcuts import get_object_or_404
+from users.permissions import (
+    IsProjectMember, 
+    IsProductOwnerOrScrumMaster, 
+    IsScrumMaster,
+    IsProjectMemberFromSprint,
+    IsScrumMasterFromSprint
+)
 
 # Create your logger
 logger = logging.getLogger(__name__)
@@ -14,7 +21,16 @@ logger = logging.getLogger(__name__)
 class UserStoryListCreateView(generics.ListCreateAPIView):
     """API view for listing and creating user stories."""
     serializer_class = UserStorySerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """
+        Get permissions based on the request method:
+        - List: Any authenticated project member can view stories
+        - Create: Only Product Owner and Scrum Master can create stories
+        """
+        if self.request.method == 'GET':
+            return [IsAuthenticated(), IsProjectMember()]
+        return [IsAuthenticated(), IsProductOwnerOrScrumMaster()]
 
     def get_queryset(self):
         """Return all user stories."""
@@ -41,7 +57,16 @@ class UserStoryListCreateView(generics.ListCreateAPIView):
 class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     """API view for retrieving, updating, and deleting a user story."""
     serializer_class = UserStorySerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """
+        Get permissions based on the request method:
+        - Retrieve: Any authenticated project member can view story details
+        - Update/Delete: Only Product Owner and Scrum Master can modify stories
+        """
+        if self.request.method == 'GET':
+            return [IsAuthenticated(), IsProjectMember()]
+        return [IsAuthenticated(), IsProductOwnerOrScrumMaster()]
 
     def get_queryset(self):
         """Return the user story based on the URL parameters."""
@@ -85,8 +110,11 @@ class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class RemoveStoryFromSprintView(APIView):
     """API view for removing a story from a sprint."""
-    permission_classes = [IsAuthenticated]
-
+    
+    def get_permissions(self):
+        """Only Scrum Master can remove stories from sprints"""
+        return [IsAuthenticated(), IsScrumMasterFromSprint()]
+    
     def post(self, request, story_id, *args, **kwargs):
         try:
             story = UserStory.objects.get(id=story_id)
@@ -102,8 +130,11 @@ class RemoveStoryFromSprintView(APIView):
 class UserStoryBacklogView(generics.ListAPIView):
     """API view for listing user stories in the backlog."""
     serializer_class = UserStorySerializer
-    permission_classes = [IsAuthenticated]
-
+    
+    def get_permissions(self):
+        """Any project member can view the backlog"""
+        return [IsAuthenticated(), IsProjectMember()]
+    
     def get_queryset(self):
         """Return all user stories in the backlog."""
         return UserStory.objects.filter(sprint=None, is_deleted=False)
@@ -112,7 +143,10 @@ class UserStoryBacklogView(generics.ListAPIView):
 class ProjectBacklogView(generics.ListAPIView):
     """API view for listing user stories in the backlog for a specific project."""
     serializer_class = UserStorySerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """Any project member can view the project backlog"""
+        return [IsAuthenticated(), IsProjectMember()]
 
     def get_queryset(self):
         """Return all user stories in the backlog for a specific project."""
@@ -182,7 +216,10 @@ class UserStoryCommentListCreateView(generics.ListCreateAPIView):
 
 class SprintStoriesView(views.APIView):
     """API view for managing stories in a sprint."""
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """Any project member can view stories in a sprint"""
+        return [IsAuthenticated(), IsProjectMemberFromSprint()]
 
     def get(self, request, sprint_id, *args, **kwargs):
         """Retrieve all user stories for a specific sprint."""
@@ -232,6 +269,16 @@ class PlanningPokerView(views.APIView):
 class UserStoryViewSet(viewsets.ModelViewSet):
     queryset = UserStory.objects.all()
     serializer_class = UserStorySerializer
+    
+    def get_permissions(self):
+        """
+        Get permissions based on the request method:
+        - List/Retrieve: Any authenticated project member can view stories
+        - Create/Update/Delete: Only Product Owner and Scrum Master can modify stories
+        """
+        if self.request.method in ['GET']:
+            return [IsAuthenticated(), IsProjectMember()]
+        return [IsAuthenticated(), IsProductOwnerOrScrumMaster()]
 
     def get_queryset(self):
         sprint_id = self.kwargs['sprint_id']
@@ -327,7 +374,10 @@ class UserStoryUpdateStatusView(APIView):
 
 class MoveStoryToSprintView(APIView):
     """API view for moving a story to a specific sprint."""
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """Only Scrum Master can move stories to sprints"""
+        return [IsAuthenticated(), IsScrumMasterFromSprint()]
 
     def post(self, request, story_id, sprint_id, *args, **kwargs):
         """Move a story to a specific sprint."""
@@ -364,7 +414,10 @@ class MoveStoryToSprintView(APIView):
 
 class MarkStoryAsRealizedView(APIView):
     """API view for marking a story as realized (ACCEPTED status)."""
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """Only Scrum Master can mark stories as realized"""
+        return [IsAuthenticated(), IsScrumMasterFromSprint()]
 
     def post(self, request, story_id, *args, **kwargs):
         """Mark a story as realized."""

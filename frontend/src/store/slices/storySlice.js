@@ -6,8 +6,9 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 // Async thunks
 export const fetchStories = createAsyncThunk(
   'stories/fetchStories',
-  async ({sprintId}, { rejectWithValue, getState }) => {
+  async ({projectId, sprintId}, { rejectWithValue, getState }) => {
     try {
+      console.log(`Fetching stories for sprint: ${sprintId}`);
       const { auth } = getState();
       const token = auth.token;
 
@@ -21,8 +22,10 @@ export const fetchStories = createAsyncThunk(
         },
         withCredentials: true,
       });
+      console.log('Sprint stories response:', response.data);
       return response.data;
     } catch (err) {
+      console.error('Error fetching sprint stories:', err.response?.data || err.message);
       return rejectWithValue(err.response?.data || 'Failed to fetch stories');
     }
   }
@@ -159,6 +162,7 @@ export const removeStoryFromSprint = createAsyncThunk(
   'stories/removeStoryFromSprint',
   async ({ storyId }, { rejectWithValue, getState }) => {
     try {
+      console.log(`Removing story ${storyId} from sprint`);
       const { auth } = getState();
       const token = auth.token;
 
@@ -166,15 +170,62 @@ export const removeStoryFromSprint = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.post(`${API_URL}/stories/${storyId}/remove-from-sprint/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
+      const response = await axios.post(
+        `${API_URL}/user-stories/${storyId}/remove-from-sprint/`, 
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true,
+        }
+      );
+      console.log('Story removed from sprint successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error removing story from sprint:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || 'Failed to remove story from sprint');
+    }
+  }
+);
+
+export const addStoryToSprint = createAsyncThunk(
+  'stories/addStoryToSprint',
+  async ({ storyId, sprintId }, { rejectWithValue, getState }) => {
+    try {
+      console.log(`Adding story ${storyId} to sprint ${sprintId}`);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/stories/${storyId}/move-to-sprint/${sprintId}/`, 
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true,
+        }
+      );
+      
+      console.log('Story added to sprint successfully:', response.data);
+      // Log the complete response for debugging
+      console.log('Full API response:', {
+        status: response.status,
+        data: response.data,
+        storyId: storyId,
+        sprintId: sprintId
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      console.error('Error adding story to sprint:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || 'Failed to add story to sprint');
     }
   }
 );
@@ -348,6 +399,66 @@ const storySlice = createSlice({
       .addCase(removeStoryFromSprint.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to remove story from sprint';
+      })
+      .addCase(addStoryToSprint.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addStoryToSprint.fulfilled, (state, action) => {
+        state.loading = false;
+        const storyId = action.meta.arg.storyId;
+        const sprintId = action.meta.arg.sprintId;
+        console.log('addStoryToSprint fulfilled with payload:', action.payload);
+        console.log('Current stories in state:', state.stories);
+        
+        // Find if the story is already in sprint stories
+        const storyExists = state.stories.some(story => story.id === storyId);
+        
+        // Update the story in sprint stories if it exists, otherwise add it
+        if (storyExists) {
+          state.stories = state.stories.map(story =>
+            story.id === storyId ? { ...story, sprint: sprintId } : story
+          );
+        } else if (action.payload) {
+          // If we have payload data, add the story to sprint stories
+          state.stories.push(action.payload);
+        }
+        
+        console.log('Updated stories in state:', state.stories);
+        
+        // Update in backlog categories
+        // Find the story in unactive stories
+        const storyInUnactive = state.backlogStories.unrealized.unactive.findIndex(
+          story => story.id === storyId
+        );
+        
+        if (storyInUnactive !== -1) {
+          // Remove from unactive stories
+          const updatedStory = {
+            ...state.backlogStories.unrealized.unactive[storyInUnactive], 
+            sprint: sprintId
+          };
+          state.backlogStories.unrealized.unactive.splice(storyInUnactive, 1);
+          
+          // Add to active stories
+          state.backlogStories.unrealized.active.push(updatedStory);
+          console.log('Story moved from unactive to active in backlog');
+        } else {
+          // Find the story in active stories to update its sprint ID
+          const storyIndex = state.backlogStories.unrealized.active.findIndex(
+            story => story.id === storyId
+          );
+          
+          if (storyIndex !== -1) {
+            // Update the sprint ID
+            state.backlogStories.unrealized.active[storyIndex].sprint = sprintId;
+            console.log('Story updated in active backlog');
+          }
+        }
+      })
+      .addCase(addStoryToSprint.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to add story to sprint';
       });
   },
 });

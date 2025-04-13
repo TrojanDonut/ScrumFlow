@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
-import { fetchStories, removeStoryFromSprint, updateStory, fetchBacklogStories } from '../store/slices/storySlice';
+import { fetchStories, removeStoryFromSprint, updateStory, fetchBacklogStories, addStoryToSprint } from '../store/slices/storySlice';
 import { fetchSprintById } from '../store/slices/sprintSlice';
 import { fetchTasksByProject } from '../store/slices/taskSlice';
 import { useDispatch, useSelector } from 'react-redux';
@@ -27,11 +27,27 @@ const UserStories = () => {
   const { tasksByStoryId } = useSelector((state) => state.tasks);
   
   useEffect(() => {
-    dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
-    dispatch(fetchBacklogStories(projectId)); // Updated to include projectId
-    dispatch(fetchSprintById({ projectId: projectId, sprintId: sprintId }));
+    console.log('UserStories useEffect running with projectId:', projectId, 'sprintId:', sprintId);
+    
+    // Check if we have the required IDs
+    if (!projectId || !sprintId) {
+      console.error('Missing projectId or sprintId in UserStories component');
+      return;
+    }
+    
+    // Dispatch actions to fetch data
+    dispatch(fetchStories({ projectId, sprintId }))
+      .then(result => {
+        console.log('fetchStories completed:', result);
+      })
+      .catch(error => {
+        console.error('fetchStories error:', error);
+      });
+      
+    dispatch(fetchBacklogStories(projectId));
+    dispatch(fetchSprintById({ projectId, sprintId }));
     dispatch(fetchTasksByProject(projectId));
-  }, [projectId, sprintId]);
+  }, [projectId, sprintId, dispatch]);
 
   const handleUserStoryAdded = (newStory) => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
@@ -55,6 +71,7 @@ const UserStories = () => {
 
   const handleAddStoryToSprint = async (selectedStories) => {
     try {
+      console.log('Attempting to add stories to sprint:', selectedStories);
       // Calculate current sprint load
       const currentSprintLoad = stories.reduce((total, story) => 
         total + (story.story_points || 0), 0);
@@ -62,6 +79,8 @@ const UserStories = () => {
       // Calculate additional load from selected stories
       const additionalLoad = selectedStories.reduce((total, story) => 
         total + (story.story_points || 0), 0);
+      
+      console.log(`Current sprint load: ${currentSprintLoad}, additional load: ${additionalLoad}`);
       
       // Check if we have velocity and if adding would exceed it
       if (currentSprint && currentSprint.velocity) {
@@ -80,26 +99,42 @@ const UserStories = () => {
       }
       
       // If all validations pass, add stories to sprint
+      console.log(`Adding ${selectedStories.length} stories to sprint ${sprintId}`);
       for (const story of selectedStories) {
-        const updatedStory = { ...story, sprint: sprintId };
-        const storyId = story.id;
-        await dispatch(updateStory({ storyId: storyId, storyData: updatedStory })).unwrap();
+        console.log(`Adding story ${story.id} to sprint ${sprintId}`);
+        const result = await dispatch(addStoryToSprint({ storyId: story.id, sprintId })).unwrap();
+        console.log(`Story ${story.id} added with result:`, result);
       }
       
-      // Refresh data
-      dispatch(fetchStories({ projectId, sprintId }));
-      dispatch(fetchBacklogStories(projectId));
-      setError(null);
+      console.log('All stories added to sprint, now refreshing data...');
+      
+      // Refresh data with explicit promise handling for debugging
+      try {
+        const storiesResult = await dispatch(fetchStories({ projectId, sprintId })).unwrap();
+        console.log('Sprint stories refreshed:', storiesResult);
+        
+        const backlogResult = await dispatch(fetchBacklogStories(projectId)).unwrap();
+        console.log('Backlog stories refreshed:', backlogResult);
+        
+        setError(null);
+        console.log('Successfully refreshed all story data after adding to sprint');
+      } catch (refreshError) {
+        console.error('Error refreshing story data:', refreshError);
+      }
     } catch (err) {
+      console.error('Failed to add stories to sprint:', err);
       setError('Failed to add stories to sprint: ' + (err.message || 'Unknown error'));
     }
   };
 
   // Divide stories into categories based on their state
   const states = ['NOT_STARTED', 'IN_PROGRESS', 'DONE', 'ACCEPTED', 'REJECTED'];
-  const categorizedStories = states.map((state) =>
-    stories.filter((story) => story.status === state)
-  );
+  console.log('Current stories before categorization:', stories);
+  const categorizedStories = states.map((state) => {
+    const filtered = stories.filter((story) => story.status === state);
+    console.log(`Stories in ${state} state:`, filtered);
+    return filtered;
+  });
 
   // Check if backlogStories is in the expected format and initialized
   const backlogStoriesReady = backlogStories && 
