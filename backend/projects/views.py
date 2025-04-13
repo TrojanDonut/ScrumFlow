@@ -38,7 +38,25 @@ class ProjectListCreateView(generics.ListCreateAPIView):
         if product_owner == scrum_master:
             raise ValidationError("Product Owner and Scrum Master cannot be the same user.")
 
-        serializer.save()
+        # Save the project first
+        project = serializer.save()
+        
+        # Now create ProjectMember entries for product_owner and scrum_master
+        from .models import ProjectMember
+        
+        # Add product owner as a member with PRODUCT_OWNER role
+        ProjectMember.objects.create(
+            project=project,
+            user_id=product_owner,
+            role=ProjectMember.Role.PRODUCT_OWNER
+        )
+        
+        # Add scrum master as a member with SCRUM_MASTER role
+        ProjectMember.objects.create(
+            project=project,
+            user_id=scrum_master,
+            role=ProjectMember.Role.SCRUM_MASTER
+        )
 
 class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -61,6 +79,54 @@ class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
         context = super().get_serializer_context()
         context['include_members'] = True
         return context
+        
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        old_product_owner = instance.product_owner_id
+        old_scrum_master = instance.scrum_master_id
+        
+        # Check if product_owner or scrum_master are being updated
+        new_product_owner = request.data.get('product_owner')
+        new_scrum_master = request.data.get('scrum_master')
+        
+        # Perform the normal update
+        response = super().update(request, *args, **kwargs)
+        
+        # If product_owner changed, update the ProjectMember entry
+        if new_product_owner and int(new_product_owner) != old_product_owner:
+            from .models import ProjectMember
+            
+            # Remove old product owner role if exists
+            ProjectMember.objects.filter(
+                project=instance,
+                role=ProjectMember.Role.PRODUCT_OWNER
+            ).delete()
+            
+            # Add new product owner as member with PRODUCT_OWNER role
+            ProjectMember.objects.create(
+                project=instance,
+                user_id=new_product_owner,
+                role=ProjectMember.Role.PRODUCT_OWNER
+            )
+        
+        # If scrum_master changed, update the ProjectMember entry
+        if new_scrum_master and int(new_scrum_master) != old_scrum_master:
+            from .models import ProjectMember
+            
+            # Remove old scrum master role if exists
+            ProjectMember.objects.filter(
+                project=instance,
+                role=ProjectMember.Role.SCRUM_MASTER
+            ).delete()
+            
+            # Add new scrum master as member with SCRUM_MASTER role
+            ProjectMember.objects.create(
+                project=instance,
+                user_id=new_scrum_master,
+                role=ProjectMember.Role.SCRUM_MASTER
+            )
+            
+        return response
 
 
 class ProjectMemberListCreateView(generics.ListCreateAPIView):
