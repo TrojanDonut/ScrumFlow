@@ -17,7 +17,11 @@ class ProjectListCreateView(generics.ListCreateAPIView):
     serializer_class = ProjectSerializer
 
     def get_queryset(self):
-        # Only return projects where the user is a member
+        # Admin users can see all projects
+        if self.request.user.is_superuser or getattr(self.request.user, 'is_staff', False) or getattr(self.request.user, 'user_type', '') == 'ADMIN':
+            return Project.objects.all()
+        
+        # Regular users can only see projects they're members of
         return Project.objects.filter(
             members__user=self.request.user
         ).distinct()

@@ -24,14 +24,10 @@ export const fetchTasksByProject = createAsyncThunk(
 
       // Group tasks by story_id
       const tasksByStoryId = response.data.reduce((acc, task) => {
-        if (task.story) {  // Make sure story ID exists
-          if (!acc[task.story]) {
-            acc[task.story] = [];
-          }
-          acc[task.story].push(task);
-        } else {
-          console.warn("Task without story ID found:", task);
+        if (!acc[task.story]) {
+          acc[task.story] = [];
         }
+        acc[task.story].push(task);
         return acc;
       }, {});
 

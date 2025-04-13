@@ -71,6 +71,12 @@ export const fetchCurrentUser = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
+      // If we get a 401, clear the auth state
+      if (error.response?.status === 401) {
+        localStorage.removeItem('access');
+        localStorage.removeItem('refresh');
+        delete axios.defaults.headers.common['Authorization'];
+      }
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -275,14 +281,20 @@ const authSlice = createSlice({
       // Fetch current user reducers
       .addCase(fetchCurrentUser.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
+        state.isAuthenticated = true;
       })
       .addCase(fetchCurrentUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.token = null;
+        state.refreshToken = null;
       })
       
       // Logout reducers

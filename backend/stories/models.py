@@ -20,24 +20,50 @@ class UserStory(models.Model):
         DONE = 'DONE', 'Done'
         ACCEPTED = 'ACCEPTED', 'Accepted'
         REJECTED = 'REJECTED', 'Rejected'
+        # Legacy status values for migration compatibility
+        BACKLOG = 'BACKLOG', 'Backlog (Legacy)'
+        SPRINT = 'SPRINT', 'In Sprint (Legacy)'
+        REVIEW = 'REVIEW', 'In Review (Legacy)'
+        REALIZED = 'REALIZED', 'Realized (Legacy)'
 
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='stories', null=True, blank=True)
-    sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE, related_name='user_stories', null=True, blank=True)
+    project = models.ForeignKey(
+        Project, 
+        on_delete=models.CASCADE, 
+        related_name='stories', 
+        null=True, 
+        blank=True
+    )
+    sprint = models.ForeignKey(
+        Sprint, 
+        on_delete=models.CASCADE, 
+        related_name='user_stories', 
+        null=True, 
+        blank=True
+    )
     name = models.CharField(max_length=255)
     text = models.TextField()
     acceptance_tests = models.TextField()
-    priority = models.CharField(max_length=50, choices=Priority.choices, default=Priority.MUST_HAVE)
+    priority = models.CharField(
+        max_length=50, 
+        choices=Priority.choices, 
+        default=Priority.MUST_HAVE
+    )
 
     business_value = models.PositiveIntegerField()
     story_points = models.PositiveIntegerField(null=True, blank=True)
-    status = models.CharField(max_length=15, choices=Status.choices, default=Status.NOT_STARTED)
+    status = models.CharField(
+        max_length=15, 
+        choices=Status.choices, 
+        default=Status.NOT_STARTED
+    )
 
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name='assigned_user',
         blank=True,
         null=True,
-        on_delete=models.SET_NULL)
+        on_delete=models.SET_NULL
+    )
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -74,12 +100,33 @@ class UserStory(models.Model):
         return self.status in [self.Status.DONE, self.Status.ACCEPTED]
     
     def clean(self):
-        """Custom validation to ensure that a user story is not assigned to multiple sprints"""
+        """Custom validation to ensure unique story names and migrate status"""
+        # Check for duplicate story names
         if UserStory.objects.exclude(pk=self.pk).filter(
-            name__iexact=self.name,
-            project=self.project,
+                name__iexact=self.name,
+                project=self.project,
             ).exists():
-            raise ValidationError({'name': 'Name must be unique (case-insensitive).'})
+            raise ValidationError({
+                'name': 'Name must be unique (case-insensitive).'
+            })
+        
+        # Handle legacy status values migration
+        self._migrate_legacy_status()
+    
+    def _migrate_legacy_status(self):
+        """Convert legacy status values to new ones"""
+        status_mapping = {
+            'BACKLOG': self.Status.NOT_STARTED,
+            'SPRINT': self.Status.IN_PROGRESS, 
+            'IN_PROGRESS': self.Status.IN_PROGRESS,
+            'REVIEW': self.Status.DONE,
+            'DONE': self.Status.DONE,
+            'REALIZED': self.Status.ACCEPTED,
+        }
+        
+        if (self.status in status_mapping and 
+            self.status != status_mapping[self.status]):
+            self.status = status_mapping[self.status]
     
     def save(self, *args, **kwargs):
         """Override save method to enforce unique constraint on name"""

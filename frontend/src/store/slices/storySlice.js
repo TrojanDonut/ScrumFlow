@@ -80,7 +80,7 @@ export const createStory = createAsyncThunk(
 
       console.log('Sending story data:', storyWithProject);
 
-      const response = await axios.post(`${API_URL}/user-stories/`, storyWithProject, {
+      const response = await axios.post(`${API_URL}/stories/`, storyWithProject, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -112,7 +112,7 @@ export const updateStory = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.put(`${API_URL}/user-stories/${storyId}/`,
+      const response = await axios.put(`${API_URL}/stories/${storyId}/`,
         storyData,
         {
           headers: { 'Content-Type': 'application/json' },
@@ -139,7 +139,7 @@ export const deleteStory = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.delete(`${API_URL}/user-stories/${storyId}/`, {
+      const response = await axios.delete(`${API_URL}/stories/${storyId}/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -166,7 +166,7 @@ export const removeStoryFromSprint = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.post(`${API_URL}/user-stories/${storyId}/remove-from-sprint/`, {
+      const response = await axios.post(`${API_URL}/stories/${storyId}/remove-from-sprint/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -232,21 +232,8 @@ const storySlice = createSlice({
       })
       .addCase(fetchBacklogStories.fulfilled, (state, action) => {
         state.loading = false;
-        
-        // The API is returning an array of stories, not a structured object
-        // Convert the array into the expected structure
-        const stories = action.payload || [];
-        
-        // Organize stories by status and sprint
-        const backlogStories = {
-          finished: stories.filter(story => story.status === 'COMPLETED' || story.status === 'ACCEPTED'),
-          unrealized: {
-            active: stories.filter(story => (story.status !== 'COMPLETED' && story.status !== 'ACCEPTED') && story.sprint),
-            unactive: stories.filter(story => (story.status !== 'COMPLETED' && story.status !== 'ACCEPTED') && !story.sprint)
-          }
-        };
-        
-        state.backlogStories = backlogStories;
+        // The API now returns a structured object, not an array
+        state.backlogStories = action.payload;
       })
       .addCase(fetchBacklogStories.rejected, (state, action) => {
         state.loading = false;

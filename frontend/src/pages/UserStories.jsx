@@ -20,27 +20,18 @@ const UserStories = () => {
   const [selectedStory, setSelectedStory] = useState(null);
   const [expandedStoryId, setExpandedStoryId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(null);
   const dispatch = useDispatch();
   
   const { stories, backlogStories } = useSelector((state) => state.stories);
   const { loading, error: sprintError, currentSprint } = useSelector((state) => state.sprints);
   const { tasksByStoryId } = useSelector((state) => state.tasks);
   
-  // Add debug logging
-  console.log("UserStories - tasksByStoryId:", tasksByStoryId);
-  console.log("UserStories - stories:", stories);
-  
-  const fetchData = () => {
+  useEffect(() => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
-    dispatch(fetchBacklogStories(projectId));
+    dispatch(fetchBacklogStories(projectId)); // Updated to include projectId
     dispatch(fetchSprintById({ projectId: projectId, sprintId: sprintId }));
     dispatch(fetchTasksByProject(projectId));
-  };
-  
-  useEffect(() => {
-    fetchData();
-  }, [projectId, sprintId, dispatch]);
+  }, [projectId, sprintId]);
 
   const handleUserStoryAdded = (newStory) => {
     dispatch(fetchStories({ projectId: projectId, sprintId: sprintId }));
@@ -115,18 +106,6 @@ const UserStories = () => {
                              (typeof backlogStories === 'object') && 
                              ('unrealized' in backlogStories);
 
-  const handleSprintEditClose = (success) => {
-    setShowEditModal(false);
-    // Refresh data when the sprint edit modal is closed
-    fetchData();
-    
-    if (success) {
-      setSuccessMessage('Sprint updated successfully!');
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(null), 3000);
-    }
-  };
-
   if (loading || currentSprint === null) {
     return <div>Loading...</div>;
   }
@@ -187,7 +166,6 @@ const UserStories = () => {
         Add Story From Backlog
       </Button>
     </div>
-    {successMessage && <Alert variant="success" className="mt-3">{successMessage}</Alert>}
     {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
     <div className="row">
       {states.map((state, index) => (
@@ -227,7 +205,7 @@ const UserStories = () => {
     {/* SprintEditModal */}
     <SprintEditModal
       show={showEditModal}
-      handleClose={handleSprintEditClose}
+      handleClose={() => setShowEditModal(false)}
       sprintId={sprintId}
       projectId={projectId}
       sprintData={currentSprint}

@@ -19,7 +19,6 @@ const ProjectDetail = () => {
     end_date: "",
     velocity: 0,
   });
-  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     dispatch(fetchProjectById(id));
@@ -30,35 +29,11 @@ const ProjectDetail = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    
-    try {
-      // Add project ID to the sprint data
-      const sprintDataWithProject = {
-        ...formData,
-        project: parseInt(id, 10)  // Make sure the project ID is an integer
-      };
-      
-      await dispatch(createSprint({ 
-        projectId: id, 
-        sprintData: sprintDataWithProject 
-      })).unwrap();
-      
-      // Reset form
-      setFormData({ start_date: "", end_date: "", velocity: 0 });
-      
-      // Refresh sprints list
-      dispatch(fetchSprints(id));
-      
-      // Show success message
-      setSuccessMessage('Sprint created successfully!');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      console.error('Failed to create sprint:', err);
-    }
+
+    dispatch(createSprint({ projectId: id, sprintData: formData }));
+    setFormData({ start_date: "", end_date: "", velocity: 0 });
   };
 
   const formatDate = (dateString) => {
@@ -148,7 +123,6 @@ const ProjectDetail = () => {
               {loading ? "Creating..." : "Create Sprint"}
             </Button>
           </form>
-          {successMessage && <Alert variant="success" className="mt-3">{successMessage}</Alert>}
           {error && <Alert variant="danger" className="mt-3">{formatErrorMessage(error)}</Alert>}
         </Card.Body>
       </Card>

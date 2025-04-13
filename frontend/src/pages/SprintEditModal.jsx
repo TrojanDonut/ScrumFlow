@@ -10,11 +10,12 @@ const SprintEditModal = ({ show, handleClose, sprintId, projectId, sprintData })
   const [error, setError] = useState(null);
   const dispatch = useDispatch();
 
-  // Determine sprint status based on ORIGINAL data, not the edited values
+  // Determine if the sprint is in the past, active or future
   const getSprintStatus = () => {
-    if (!sprintData || !sprintData.start_date || !sprintData.end_date) return 'unknown';
+    if (!sprintData) return 'unknown';
     
     const now = new Date();
+    // Use original dates from sprintData to determine status
     if (new Date(sprintData.start_date) > now) {
       return 'future';
     } else if (new Date(sprintData.end_date) < now) {
@@ -59,10 +60,11 @@ const SprintEditModal = ({ show, handleClose, sprintId, projectId, sprintData })
 
     // Check for change restrictions based on sprint status
     if (sprintStatus === 'past') {
-      setError('Past sprints cannot be modified to maintain historical accuracy.');
+      setError('Past sprints cannot be modified.');
       return;
     }
 
+    // Only check for active sprints when actually changing the dates
     if (sprintStatus === 'active' && 
         (startDate !== sprintData.start_date || endDate !== sprintData.end_date)) {
       setError('You cannot change start or end dates for an active sprint.');
@@ -75,16 +77,14 @@ const SprintEditModal = ({ show, handleClose, sprintId, projectId, sprintData })
         ? { velocity, project: projectId }
         : { start_date: startDate, end_date: endDate, velocity, project: projectId };
       
-      const result = await dispatch(
+      await dispatch(
         updateSprint({
           sprintId,
           projectId,
           sprintData: updateData,
         })
       ).unwrap();
-      
-      // Close the modal and indicate success
-      handleClose(true);
+      handleClose();
     } catch (err) {
       setError('Failed to update sprint. Please try again.');
     }
@@ -113,6 +113,12 @@ const SprintEditModal = ({ show, handleClose, sprintId, projectId, sprintData })
           </Alert>
         )}
         
+        {sprintStatus === 'future' && (
+          <Alert variant="info">
+            This is a future sprint. You can modify all fields.
+          </Alert>
+        )}
+        
         <Form>
           <Form.Group controlId="startDate">
             <Form.Label>Start Date</Form.Label>
@@ -124,7 +130,7 @@ const SprintEditModal = ({ show, handleClose, sprintId, projectId, sprintData })
             />
             {sprintStatus !== 'future' && (
               <Form.Text className="text-muted">
-                Start date can only be changed for future sprints.
+                Start date can only be changed for future sprints. Current sprint status is determined by original dates.
               </Form.Text>
             )}
           </Form.Group>
@@ -138,7 +144,7 @@ const SprintEditModal = ({ show, handleClose, sprintId, projectId, sprintData })
             />
             {sprintStatus !== 'future' && (
               <Form.Text className="text-muted">
-                End date can only be changed for future sprints.
+                End date can only be changed for future sprints. Current sprint status is determined by original dates.
               </Form.Text>
             )}
           </Form.Group>
