@@ -166,8 +166,14 @@ const ProductBacklog = () => {
       'MUST_HAVE': stories.filter(s => s.priority === 'MUST_HAVE').sort((a, b) => b.business_value - a.business_value),
       'SHOULD_HAVE': stories.filter(s => s.priority === 'SHOULD_HAVE').sort((a, b) => b.business_value - a.business_value),
       'COULD_HAVE': stories.filter(s => s.priority === 'COULD_HAVE').sort((a, b) => b.business_value - a.business_value),
-      'WONT_HAVE': stories.filter(s => s.priority === 'WONT_HAVE').sort((a, b) => b.business_value - a.business_value)
     };
+    
+    // Only include WONT_HAVE stories if they exist in this list
+    // (which should only happen for the Future Releases tab)
+    const wontHaveStories = stories.filter(s => s.priority === 'WONT_HAVE');
+    if (wontHaveStories.length > 0) {
+      priorityGroups['WONT_HAVE'] = wontHaveStories.sort((a, b) => b.business_value - a.business_value);
+    }
 
     return (
       <>
@@ -348,15 +354,114 @@ const ProductBacklog = () => {
 
               <Tab.Pane eventKey="finished">
                 <h4 className="mb-3">Finished User Stories</h4>
-                {renderUserStoryList(backlogStories.finished || [])}
+                {renderUserStoryList((backlogStories.finished || []).filter(story => story.priority !== 'WONT_HAVE'))}
               </Tab.Pane>
               
               <Tab.Pane eventKey="future">
                 <h4 className="mb-3">Future Releases</h4>
-                {renderUserStoryList([
-                  ...(backlogStories.unrealized?.unactive?.filter(story => story.priority === 'WONT_HAVE') || []),
-                  ...(backlogStories.unrealized?.active?.filter(story => story.priority === 'WONT_HAVE') || [])
-                ])}
+                {/* Custom rendering for Future Releases - only show WONT_HAVE stories */}
+                {(() => {
+                  const stories = [
+                    ...(backlogStories.unrealized?.unactive?.filter(story => story.priority === 'WONT_HAVE') || []),
+                    ...(backlogStories.unrealized?.active?.filter(story => story.priority === 'WONT_HAVE') || [])
+                  ];
+                  
+                  if (!stories || stories.length === 0) {
+                    return (
+                      <ListGroup.Item className="text-muted">
+                        No stories in this category
+                      </ListGroup.Item>
+                    );
+                  }
+
+                  const wontHaveStories = stories.sort((a, b) => b.business_value - a.business_value);
+
+                  return (
+                    <Card className="mb-3">
+                      <Card.Header className="d-flex justify-content-between align-items-center">
+                        <span>
+                          <Badge bg={getPriorityBadgeVariant('WONT_HAVE')} className="me-2">
+                            {formatPriorityLabel('WONT_HAVE')}
+                          </Badge>
+                          <span className="fw-bold">
+                            {wontHaveStories.length} {wontHaveStories.length === 1 ? 'story' : 'stories'}
+                          </span>
+                        </span>
+                      </Card.Header>
+                      <ListGroup variant="flush">
+                        {wontHaveStories.map(story => (
+                          <ListGroup.Item 
+                            key={story.id}
+                            className="d-flex justify-content-between align-items-center"
+                          >
+                            <div>
+                              <h6>{story.name}</h6>
+                              <small>Business Value: {story.business_value}</small>
+                              {story.story_points ? (
+                                <small className="ms-3">Story Points: {story.story_points}</small>
+                              ) : (
+                                <small className="ms-3 text-warning">Not Estimated</small>
+                              )}
+                              {story.sprint && (
+                                <Badge bg="info" className="ms-3">In Sprint</Badge>
+                              )}
+                              <Badge bg={story.status === 'ACCEPTED' ? 'success' : 'secondary'} className="ms-3">
+                                {story.status.replace('_', ' ')}
+                              </Badge>
+                            </div>
+                            <div>
+                            {!story.sprint && (
+                                <>
+                                  <Button 
+                                    variant="outline-primary" 
+                                    size="sm" 
+                                    className="me-2"
+                                    onClick={() => handleEditStory(story)}
+                                  >
+                                    Edit
+                                  </Button>
+                                  
+                                  <Button 
+                                    variant="outline-info" 
+                                    size="sm" 
+                                    className="me-2"
+                                    onClick={() => handleOpenEstimateModal(story)}
+                                  >
+                                    {story.story_points ? 'Re-estimate' : 'Estimate'}
+                                  </Button>
+                                </>
+                            )}
+                              
+                              <Button 
+                                variant="outline-primary" 
+                                size="sm" 
+                                className="me-2"
+                                as={Link} 
+                                to={`/projects/${id}/user-stories/${story.id}`}
+                              >
+                                Details
+                              </Button>
+                              {!story.sprint && (
+                                <Button 
+                                  variant="danger" 
+                                  size="sm" 
+                                  onClick={() => handleRemoveStory(story.id)}
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
+                          </ListGroup.Item>
+                        ))}
+                        {wontHaveStories.length === 0 && (
+                          <ListGroup.Item className="text-muted">
+                            No stories with this priority
+                          </ListGroup.Item>
+                        )}
+                      </ListGroup>
+                    </Card>
+                  );
+                })()}
               </Tab.Pane>
             </Tab.Content>
           </Tab.Container>
@@ -403,7 +508,7 @@ const ProductBacklog = () => {
                     {[1, 2, 3, 5, 8, 13, 21].map(value => (
                       <Button 
                         key={value} 
-                        variant={newStoryPoints == value ? "primary" : "outline-secondary"}
+                        variant={newStoryPoints === value ? "primary" : "outline-secondary"}
                         size="sm"
                         onClick={() => setNewStoryPoints(value)}
                       >

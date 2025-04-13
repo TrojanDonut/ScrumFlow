@@ -83,7 +83,7 @@ export const createStory = createAsyncThunk(
 
       console.log('Sending story data:', storyWithProject);
 
-      const response = await axios.post(`${API_URL}/stories/`, storyWithProject, {
+      const response = await axios.post(`${API_URL}/user-stories/`, storyWithProject, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

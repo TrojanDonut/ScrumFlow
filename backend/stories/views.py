@@ -1,6 +1,6 @@
 from rest_framework import generics, status, views, viewsets, serializers
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.views import APIView
 from .models import UserStory
 from .serializers import UserStorySerializer
@@ -13,9 +13,35 @@ from users.permissions import (
     IsProjectMemberFromSprint,
     IsScrumMasterFromSprint
 )
+from projects.models import ProjectMember
 
 # Create your logger
 logger = logging.getLogger(__name__)
+
+
+class IsProductOwnerOrScrumMasterFromData(BasePermission):
+    """
+    Permission to check if user is either a Product Owner or Scrum Master based on project_id in request data.
+    This is used for endpoints where project_id comes from request data instead of URL.
+    """
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        
+        # For POST requests, get project_id from request data
+        if request.method == 'POST':
+            project_id = request.data.get('project')
+            if not project_id:
+                return False
+                
+            return ProjectMember.objects.filter(
+                project_id=project_id,
+                user=request.user,
+                role__in=[ProjectMember.Role.PRODUCT_OWNER, ProjectMember.Role.SCRUM_MASTER]
+            ).exists()
+            
+        return False  # Default to False for other methods
 
 
 class UserStoryListCreateView(generics.ListCreateAPIView):
@@ -30,7 +56,7 @@ class UserStoryListCreateView(generics.ListCreateAPIView):
         """
         if self.request.method == 'GET':
             return [IsAuthenticated(), IsProjectMember()]
-        return [IsAuthenticated(), IsProductOwnerOrScrumMaster()]
+        return [IsAuthenticated(), IsProductOwnerOrScrumMasterFromData()]
 
     def get_queryset(self):
         """Return all user stories."""
