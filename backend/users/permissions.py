@@ -99,9 +99,18 @@ class IsProductOwnerOrScrumMaster(BasePermission):
         
         # If 'project_id' is in the URL params, check if user is PO or SM for this project
         project_id = view.kwargs.get('project_id')
+        
+        # If not found in URL params, check in JSON payload
+        if not project_id:
+            project_id = request.data.get('project')
+        
+                # If still not found, check in query parameters
+        if not project_id:
+            project_id = request.query_params.get('project')
+
         if not project_id:
             return False
-            
+        
         return ProjectMember.objects.filter(
             project_id=project_id,
             user=request.user,

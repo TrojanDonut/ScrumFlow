@@ -41,6 +41,7 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
         business_value: userStoryData.business_value || defaultState.business_value,
         status: userStoryData.status || defaultState.status,
         sprint: userStoryData.sprint || defaultState.sprint,
+        story_points: userStoryData.story_points || defaultState.story_points,
       });
     } else {
       setFormData(getDefaultState());

@@ -136,7 +136,8 @@ const ProjectDetail = () => {
         </Card.Body>
       </Card>)}
 
-      <Card className="mt-4">
+      { currentProjectRole !== "PRODUCT_OWNER" && 
+      (<Card className="mt-4">
         <Card.Body>
           <Card.Title>Existing Sprints</Card.Title>
           {sprints.length > 0 ? (
@@ -162,7 +163,7 @@ const ProjectDetail = () => {
             <p>No sprints available.</p>
           )}
         </Card.Body>
-      </Card>
+      </Card>)}
     </div>
   );
 };

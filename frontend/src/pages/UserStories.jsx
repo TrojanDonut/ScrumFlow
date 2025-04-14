@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
-import { fetchStories, removeStoryFromSprint, updateStory, fetchBacklogStories, addStoryToSprint } from '../store/slices/storySlice';
+import { fetchStories, removeStoryFromSprint, fetchBacklogStories, addStoryToSprint } from '../store/slices/storySlice';
 import { fetchSprintById } from '../store/slices/sprintSlice';
 import { fetchTasksByProject } from '../store/slices/taskSlice';
 import { useDispatch, useSelector } from 'react-redux';

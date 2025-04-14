@@ -115,7 +115,7 @@ export const updateStory = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.put(`${API_URL}/stories/${storyId}/`,
+      const response = await axios.put(`${API_URL}/user-stories/${storyId}/`,
         storyData,
         {
           headers: { 'Content-Type': 'application/json' },

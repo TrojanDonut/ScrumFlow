@@ -287,12 +287,13 @@ const ProductBacklog = () => {
           <h1>Product Backlog</h1>
           {currentProject && <p>{currentProject.name}</p>}
         </div>
+        { currentProjectRole !== "DEVELOPER" && (
         <Button 
           variant="primary"
           onClick={handleOpenAddStoryModal}
         >
           Add New User Story
-        </Button>
+        </Button>)}
       </div>
 
       {renderError()}
