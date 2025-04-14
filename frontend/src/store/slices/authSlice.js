@@ -223,6 +223,7 @@ const initialState = {
   user: null,
   loading: false,
   error: null,
+  currentProjectRole: localStorage.getItem('currentProjectRole') || null,
   twoFactorSetup: {
     qrCode: null,
     secretKey: null,
@@ -257,6 +258,10 @@ const authSlice = createSlice({
         loading: false,
         error: null,
       };
+    },
+    setCurrentUserRole: (state, action) => {
+      state.currentProjectRole = action.payload;
+      localStorage.setItem('currentProjectRole', action.payload); // Persist to localStorage
     },
   },
   extraReducers: (builder) => {
@@ -375,5 +380,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, clearPasswordChangeState, clearTwoFactorSetupState } = authSlice.actions;
+export const { clearError, clearPasswordChangeState, clearTwoFactorSetupState, setCurrentUserRole } = authSlice.actions;
 export default authSlice.reducer; 

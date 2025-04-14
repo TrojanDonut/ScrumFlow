@@ -25,6 +25,7 @@ const UserStories = () => {
   const { stories, backlogStories } = useSelector((state) => state.stories);
   const { loading, error: sprintError, currentSprint } = useSelector((state) => state.sprints);
   const { tasksByStoryId } = useSelector((state) => state.tasks);
+  const { currentProjectRole } = useSelector(state => state.auth);
   
   useEffect(() => {
     console.log('UserStories useEffect running with projectId:', projectId, 'sprintId:', sprintId);
@@ -148,6 +149,7 @@ const UserStories = () => {
   <div>
     <div className="d-flex justify-content-between align-items-center">
       <h1>User Stories for Sprint</h1>
+      {currentProjectRole === 'SCRUM_MASTER' && (
       <Button
         variant="secondary"
         onClick={() => {
@@ -155,7 +157,7 @@ const UserStories = () => {
         }}
       >
         Edit Sprint
-      </Button>
+      </Button>)}
     </div>
     
     {currentSprint && (
@@ -193,13 +195,14 @@ const UserStories = () => {
     )}
     
     <div className="d-flex align-items-start mb-3">
+    {currentProjectRole === 'SCRUM_MASTER' && (
       <Button
         variant="primary"
         onClick={() => setShowBacklogModal(true)}
         disabled={!currentSprint?.is_active || !backlogStoriesReady}
       >
         Add Story From Backlog
-      </Button>
+      </Button>)}
     </div>
     {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
     <div className="row">
@@ -212,6 +215,7 @@ const UserStories = () => {
           expandedStoryId={expandedStoryId}
           onRemoveFromSprint={handleRemoveFromSprint}
           tasksByStoryId={tasksByStoryId}
+          sprint={currentSprint}
         />
       ))}
     </div>

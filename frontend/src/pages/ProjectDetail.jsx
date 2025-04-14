@@ -6,13 +6,14 @@ import { fetchProjectById } from '../store/slices/projectSlice';
 import { formatErrorMessage } from '../utils/errorUtils';
 import axios from "axios";
 import { createSprint, fetchSprints } from "../store/slices/sprintSlice";
+import { setCurrentUserRole } from '../store/slices/authSlice';
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { currentProject } = useSelector(state => state.projects);
   const { sprints, error, loading } = useSelector(state => state.sprints);
-  const { user } = useSelector(state => state.auth);
+  const { user, currentProjectRole } = useSelector(state => state.auth);
 
   const [formData, setFormData] = useState({
     start_date: "",
@@ -24,6 +25,14 @@ const ProjectDetail = () => {
     dispatch(fetchProjectById(id));
     dispatch(fetchSprints(id));
   }, [dispatch, id]);
+
+  useEffect(() => {
+    if (currentProject && user) {
+      const role = currentProject.members?.find(member => member.user.id === user.id)?.role || null;
+      dispatch(setCurrentUserRole(role)); // Save the role in the state
+    }
+  }, [currentProject, user, dispatch]);
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -102,7 +111,7 @@ const ProjectDetail = () => {
           )}
         </Card.Body>
       </Card>
-
+      {currentProjectRole === 'SCRUM_MASTER' && (
       <Card className="mt-4">
         <Card.Body>
           <Card.Title>Create a New Sprint</Card.Title>
@@ -125,7 +134,7 @@ const ProjectDetail = () => {
           </form>
           {error && <Alert variant="danger" className="mt-3">{formatErrorMessage(error)}</Alert>}
         </Card.Body>
-      </Card>
+      </Card>)}
 
       <Card className="mt-4">
         <Card.Body>

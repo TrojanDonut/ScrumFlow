@@ -27,6 +27,7 @@ const ProductBacklog = () => {
   const dispatch = useDispatch();
   const { backlogStories, loading, error } = useSelector(state => state.stories);
   const { currentProject } = useSelector(state => state.projects);
+  const { currentProjectRole } = useSelector(state => state.auth);
   const [showModal, setShowModal] = useState(false);
   const [selectedStory, setSelectedStory] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -211,45 +212,42 @@ const ProductBacklog = () => {
                     </Badge>
                   </div>
                   <div>
-                  {!story.sprint && ( // Prikaži gumbe samo za zgodbe brez sprinta
+                    {!story.sprint && currentProjectRole === "SCRUM_MASTER" && (
                       <>
-                        <Button 
-                          variant="outline-primary" 
-                          size="sm" 
-                          className="me-2"
-                          onClick={() => handleEditStory(story)}
-                        >
-                          Edit
-                        </Button>
-                        
-                        <Button 
-                          variant="outline-info" 
-                          size="sm" 
-                          className="me-2"
-                          onClick={() => handleOpenEstimateModal(story)}
-                        >
-                          {story.story_points ? 'Re-estimate' : 'Estimate'}
-                        </Button>
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            className="me-2"
+                            onClick={() => handleEditStory(story)}
+                          >
+                            Edit
+                          </Button>
+                          
+                          <Button 
+                            variant="outline-info" 
+                            size="sm" 
+                            className="me-2"
+                            onClick={() => handleOpenEstimateModal(story)}
+                          >
+                            {story.story_points ? 'Re-estimate' : 'Estimate'}
+                          </Button>
+                          <Button 
+                            variant="danger" 
+                            size="sm" 
+                            onClick={() => handleRemoveStory(story.id)}
+                          >
+                            Remove
+                          </Button>
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            className="me-2"
+                            as={Link} 
+                            to={`/projects/${id}/user-stories/${story.id}`}
+                          >
+                            Details
+                          </Button>
                       </>
-                  )}
-                    
-                    <Button 
-                      variant="outline-primary" 
-                      size="sm" 
-                      className="me-2"
-                      as={Link} 
-                      to={`/projects/${id}/user-stories/${story.id}`}
-                    >
-                      Details
-                    </Button>
-                    {!story.sprint && ( // Prikaži gumb samo za zgodbe brez sprinta
-                    <Button 
-                        variant="danger" 
-                        size="sm" 
-                        onClick={() => handleRemoveStory(story.id)}
-                      >
-                        Remove
-                      </Button>
                     )}
                   </div>
                 </ListGroup.Item>
@@ -410,8 +408,8 @@ const ProductBacklog = () => {
                               </Badge>
                             </div>
                             <div>
-                            {!story.sprint && (
-                                <>
+                            {!story.sprint && currentProjectRole === "SCRUM_MASTER" && (
+                              <>
                                   <Button 
                                     variant="outline-primary" 
                                     size="sm" 
@@ -429,27 +427,24 @@ const ProductBacklog = () => {
                                   >
                                     {story.story_points ? 'Re-estimate' : 'Estimate'}
                                   </Button>
-                                </>
+                                  <Button 
+                                    variant="danger" 
+                                    size="sm" 
+                                    onClick={() => handleRemoveStory(story.id)}
+                                  >
+                                    Remove
+                                  </Button>
+                                  <Button 
+                                    variant="outline-primary" 
+                                    size="sm" 
+                                    className="me-2"
+                                    as={Link} 
+                                    to={`/projects/${id}/user-stories/${story.id}`}
+                                  >
+                                    Details
+                                  </Button>
+                              </>
                             )}
-                              
-                              <Button 
-                                variant="outline-primary" 
-                                size="sm" 
-                                className="me-2"
-                                as={Link} 
-                                to={`/projects/${id}/user-stories/${story.id}`}
-                              >
-                                Details
-                              </Button>
-                              {!story.sprint && (
-                                <Button 
-                                  variant="danger" 
-                                  size="sm" 
-                                  onClick={() => handleRemoveStory(story.id)}
-                                >
-                                  Remove
-                                </Button>
-                              )}
                             </div>
                           </ListGroup.Item>
                         ))}

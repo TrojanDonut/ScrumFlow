@@ -13,9 +13,11 @@ const UserStoryColumn = ({
   tasksByStoryId,
   sprint,
 }) => {
+  const { currentProjectRole } = useSelector(state => state.auth);
+
   const getSprintStatus = () => {
-    if (!sprint) return 'active';
     const now = new Date();
+    if (!sprint) return 'active';
     if (new Date(sprint.start_date) > now) {
       return 'future';
     } else if (new Date(sprint.end_date) < now) {
@@ -25,6 +27,8 @@ const UserStoryColumn = ({
   };
   
   const sprintStatus = getSprintStatus();
+  console.log("Sprint status:", sprintStatus);
+  console.log("Current project role:", currentProjectRole);
 
   // Display the story points and status
   const renderStoryInfo = (story) => (
@@ -58,7 +62,7 @@ const UserStoryColumn = ({
                 {renderStoryInfo(story)}
               </div>
               <div>
-                {sprintStatus !== 'past' && (
+                {sprintStatus === 'active' && currentProjectRole === "SCRUM_MASTER" && (
                   <Button
                     variant="outline-danger"
                     size="sm"
