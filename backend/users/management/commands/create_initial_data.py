@@ -192,7 +192,7 @@ class Command(BaseCommand):
                         'description': (
                             'This is the first initial task for testing.'
                         ),
-                        'status': 'TODO',
+                        'status': 'UNASSIGNED',
                         'assigned_to': User.objects.get(username='developer'),
                         'created_by': User.objects.get(
                             username='product_owner'
@@ -214,7 +214,7 @@ class Command(BaseCommand):
                         'description': (
                             'This is the third initial task for testing.'
                         ),
-                        'status': 'DONE',
+                        'status': 'COMPLETED',
                         'assigned_to': User.objects.get(
                             username='product_owner'
                         ),

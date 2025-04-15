@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ListGroup, Button, Collapse } from 'react-bootstrap';
 import StoryTaskDetails from './StoryTaskDetails';
+import { generateTaskStatusTag } from './TaskUtils';
 
 const UserStoryColumn = ({
   title,
@@ -88,7 +89,8 @@ const UserStoryColumn = ({
                     <ul style={{ paddingLeft: 0, listStylePosition: 'inside' }}>
                       {tasksByStoryId[story.id].map((task) => (
                         <li key={task.id}>
-                          {task.title} - {task.status}
+                          <strong>{task.title}</strong>
+                          {generateTaskStatusTag(task.status)}
                         </li>
                       ))}
                     </ul>
@@ -96,8 +98,10 @@ const UserStoryColumn = ({
                 ) : (
                   <div className="mt-3 text-muted">This story has no tasks.</div>
                 )}
+                <hr/>
 
                 <div className="d-flex justify-content-end mt-2">
+                  <hr/>
                   <Button
                     variant="primary"
                     size="sm"

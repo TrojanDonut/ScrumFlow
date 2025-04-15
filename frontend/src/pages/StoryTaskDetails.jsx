@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
+import { generateTaskStatusTag } from './TaskUtils';
 
 const StoryTaskDetails = ({ show, handleClose, story, tasks, users }) => {
   
@@ -8,7 +9,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users }) => {
     const user = users.find((user) => user.user.id === id);
     return user ? user.user.username : 'nobody';
   };
-  
+
   return (
     <Modal show={show} onHide={handleClose}>
       <Modal.Header closeButton>
@@ -28,9 +29,13 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users }) => {
         {tasks.length > 0 ? (
           <ul>
             {tasks.map((task) => (
-              <li key={task.id} style={{ marginBottom: '10px' }}>
-                <div>{task.title} - {task.status}</div>
+              <li key={task.id} style={{ marginBottom: '15px' }}>
+                <div>
+                  <strong>{task.title}</strong>
+                  {generateTaskStatusTag(task.status)}
+                </div>
                 <div>assigned to: {getUsername(task.assigned_to)}</div>
+                <div>estimated time: {Math.round(task.estimated_hours)}h</div>
                 <div>{task.description}</div>
               </li>
             ))}
