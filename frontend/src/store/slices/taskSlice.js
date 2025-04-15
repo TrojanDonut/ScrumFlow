@@ -38,6 +38,31 @@ export const fetchTasksByProject = createAsyncThunk(
   }
 );
 
+export const fetchUsersForProject = createAsyncThunk(
+  'tasks/fetchUsersForProject',
+  async (projectId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/projects/${projectId}/members/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch users for project');
+    }
+  }
+);
+
 export const fetchTasksStory = createAsyncThunk(
   'tasks/fetchTasks',
   async (storyId, { rejectWithValue, getState }) => {
@@ -92,6 +117,7 @@ const taskSlice = createSlice({
     tasksByStoryId: {},
     loadingByProjectId: {},
     loadingByStoryId: {},
+    projectUsers: {},
     error: null,
   },
   reducers: {
@@ -101,7 +127,24 @@ const taskSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch tasks by project reducers
+      // Fetch users by project reducers
+      .addCase(fetchUsersForProject.pending, (state, action) => {
+        console.log(`Fetching users for project ${action.meta.arg}`);
+        state.loadingByProjectId[action.meta.arg] = true;
+        state.error = null;
+      })
+      .addCase(fetchUsersForProject.fulfilled, (state, action) => {
+        console.log(`Users fetched for project ${action.meta.arg}:`, action.payload);
+        state.projectUsers = action.payload;
+        state.loadingByProjectId[action.meta.arg] = false;
+      })
+      .addCase(fetchUsersForProject.rejected, (state, action) => {
+        console.error(`Failed to fetch users for project ${action.meta.arg}:`, action.payload);
+        state.loadingByProjectId[action.meta.arg] = false;
+        state.error = action.payload || 'Failed to fetch users for project';
+      })  
+    
+    // Fetch tasks by project reducers
       .addCase(fetchTasksByProject.pending, (state, action) => {
         console.log(`Fetching tasks for project ${action.meta.arg}`);
         state.loadingByProjectId[action.meta.arg] = true;

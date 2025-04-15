@@ -1,18 +1,31 @@
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { ListGroup, Button, Collapse, Spinner } from 'react-bootstrap';
-import { fetchTasks } from '../store/slices/taskSlice';
+import { ListGroup, Button, Collapse } from 'react-bootstrap';
+import StoryTaskDetails from './StoryTaskDetails';
 
-const UserStoryColumn = ({ 
-  title, 
-  stories, 
-  onEdit, 
-  onToggleExpand, 
-  expandedStoryId, 
+const UserStoryColumn = ({
+  title,
+  stories,
+  onEdit,
+  onToggleExpand,
+  expandedStoryId,
   onRemoveFromSprint,
   tasksByStoryId,
+  projectUsers,
   sprint,
 }) => {
+  const [showModal, setShowModal] = useState(false); // State to control modal visibility
+  const [selectedStory, setSelectedStory] = useState(null); // State to store the selected story
+
+  const handleShowDetails = (story) => {
+    setSelectedStory(story);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedStory(null);
+  };
+
   const getSprintStatus = () => {
     if (!sprint) return 'active';
     const now = new Date();
@@ -23,8 +36,23 @@ const UserStoryColumn = ({
     }
     return 'active';
   };
-  
+
   const sprintStatus = getSprintStatus();
+
+  // Render the StoryTaskDetails modal
+  const renderStoryTaskDetailsModal = () => {
+    if (!selectedStory) return null;
+
+    return (
+      <StoryTaskDetails
+        show={showModal}
+        handleClose={handleCloseModal}
+        story={selectedStory}
+        tasks={tasksByStoryId[selectedStory.id] || []}
+        users={projectUsers}
+      />
+    );
+  };
 
   return (
     <div className="col">
@@ -70,6 +98,14 @@ const UserStoryColumn = ({
                 )}
 
                 <div className="d-flex justify-content-end mt-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    style={{ marginRight: '10px' }}
+                    onClick={() => handleShowDetails(story)}
+                  >
+                    Details
+                  </Button>
                   {sprintStatus !== 'past' && (
                     <Button
                       variant="danger"
@@ -85,6 +121,9 @@ const UserStoryColumn = ({
           </ListGroup.Item>
         ))}
       </ListGroup>
+
+      {/* Render the modal */}
+      {renderStoryTaskDetailsModal()}
     </div>
   );
 };
