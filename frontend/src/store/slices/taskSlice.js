@@ -87,14 +87,31 @@ export const fetchTasksStory = createAsyncThunk(
   }
 );
 
-export const createTask = createAsyncThunk(
-  'tasks/createTask',
-  async ({ storyId, taskData }, { rejectWithValue }) => {
+export const addTaskToStory = createAsyncThunk(
+  'tasks/addTaskToStory',
+  async ({ storyId, taskData }, { rejectWithValue, getState }) => {
     try {
-      const response = await axios.post(`${API_URL}/stories/${storyId}/tasks/`, taskData);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/stories/${storyId}/tasks/`,
+        taskData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || 'Failed to add task');
     }
   }
 );
@@ -177,15 +194,15 @@ const taskSlice = createSlice({
       })
       
       // Create task reducers
-      .addCase(createTask.pending, (state) => {
+      .addCase(addTaskToStory.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(createTask.fulfilled, (state, action) => {
+      .addCase(addTaskToStory.fulfilled, (state, action) => {
         state.loading = false;
         state.tasks.push(action.payload);
       })
-      .addCase(createTask.rejected, (state, action) => {
+      .addCase(addTaskToStory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to create task';
       })

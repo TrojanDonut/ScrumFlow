@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { generateTaskStatusTag } from './TaskUtils';
+import AddTaskModal from './AddTaskModal';
 
-const StoryTaskDetails = ({ show, handleClose, story, tasks, users }) => {
+const StoryTaskDetails = ({ show, handleClose, story, tasks, users, onTaskAdded }) => {
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   
   // get usernames for assigned tasks
   const getUsername = (id) => {
@@ -11,6 +13,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users }) => {
   };
 
   return (
+    <>
     <Modal show={show} onHide={handleClose}>
       <Modal.Header closeButton>
         <Modal.Title>
@@ -45,11 +48,26 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users }) => {
         )}
       </Modal.Body>
       <Modal.Footer>
+        {story.status !== 'DONE' && (  // todo - also check if the sprint is active
+          <Button variant="outline-primary" onClick={() => setShowAddTaskModal(true)}>
+              Add new task
+          </Button>
+        )}
         <Button variant="secondary" onClick={handleClose}>
           Close
         </Button>
       </Modal.Footer>
     </Modal>
+
+    {/* Add Task Modal */}
+    <AddTaskModal
+      show={showAddTaskModal}
+      handleClose={() => setShowAddTaskModal(false)}
+      storyId={story.id}
+      users={users}
+      onTaskAdded={onTaskAdded}
+    />
+    </>
   );
 };
 
