@@ -27,11 +27,13 @@ const ProductBacklog = () => {
   const dispatch = useDispatch();
   const { backlogStories, loading, error } = useSelector(state => state.stories);
   const { currentProject } = useSelector(state => state.projects);
+  const { currentProjectRole } = useSelector(state => state.auth);
   const [showModal, setShowModal] = useState(false);
   const [selectedStory, setSelectedStory] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showSizeModal, setShowSizeModal] = useState(false);
   const [newStoryPoints, setNewStoryPoints] = useState('');
+  const [storyToEstimate, setStoryToEstimate] = useState(null);
 
   useEffect(() => {
     if (id) {
@@ -65,9 +67,43 @@ const ProductBacklog = () => {
     setShowModal(true);
   };
 
+  const handleOpenEstimateModal = (story) => {
+    setStoryToEstimate(story);
+    setNewStoryPoints(story.story_points || '');
+    setShowSizeModal(true);
+  };
+
+  const handleEstimateSubmit = async () => {
+    if (!storyToEstimate) return;
+    
+    const points = parseInt(newStoryPoints, 10);
+    if (isNaN(points) || points <= 0) {
+      // Show validation error
+      return;
+    }
+
+    try {
+      await dispatch(updateStory({
+        storyId: storyToEstimate.id,
+        storyData: { ...storyToEstimate, story_points: points }
+      })).unwrap();
+      
+      dispatch(fetchBacklogStories(id));
+      setShowSizeModal(false);
+    } catch (err) {
+      console.error('Failed to update story points:', err);
+    }
+  };
 
   const handleRemoveStory = async (storyId) => {
     try {
+      // Show confirmation dialog
+      if (!window.confirm(
+        "This will mark the story as deleted but preserve all associated tasks and history. Continue?"
+      )) {
+        return; // User cancelled
+      }
+      
       console.log('Removing story with ID:', storyId); // Debugging
       await dispatch(deleteStory({ storyId })).unwrap();
       dispatch(fetchBacklogStories(id));
@@ -131,8 +167,14 @@ const ProductBacklog = () => {
       'MUST_HAVE': stories.filter(s => s.priority === 'MUST_HAVE').sort((a, b) => b.business_value - a.business_value),
       'SHOULD_HAVE': stories.filter(s => s.priority === 'SHOULD_HAVE').sort((a, b) => b.business_value - a.business_value),
       'COULD_HAVE': stories.filter(s => s.priority === 'COULD_HAVE').sort((a, b) => b.business_value - a.business_value),
-      'WONT_HAVE': stories.filter(s => s.priority === 'WONT_HAVE').sort((a, b) => b.business_value - a.business_value)
     };
+    
+    // Only include WONT_HAVE stories if they exist in this list
+    // (which should only happen for the Future Releases tab)
+    const wontHaveStories = stories.filter(s => s.priority === 'WONT_HAVE');
+    if (wontHaveStories.length > 0) {
+      priorityGroups['WONT_HAVE'] = wontHaveStories.sort((a, b) => b.business_value - a.business_value);
+    }
 
     return (
       <>
@@ -157,8 +199,10 @@ const ProductBacklog = () => {
                   <div>
                     <h6>{story.name}</h6>
                     <small>Business Value: {story.business_value}</small>
-                    {story.story_points && (
+                    {story.story_points ? (
                       <small className="ms-3">Story Points: {story.story_points}</small>
+                    ) : (
+                      <small className="ms-3 text-warning">Not Estimated</small>
                     )}
                     {story.sprint && (
                       <Badge bg="info" className="ms-3">In Sprint</Badge>
@@ -168,34 +212,42 @@ const ProductBacklog = () => {
                     </Badge>
                   </div>
                   <div>
-                  {!story.sprint && ( // Prikaži gumbe samo za zgodbe brez sprinta
-                      <Button 
-                        variant="outline-primary" 
-                        size="sm" 
-                        className="me-2"
-                        onClick={() => handleEditStory(story)}
-                      >
-                        Edit
-                      </Button>
-                  )}
-                    
-                    <Button 
-                      variant="outline-primary" 
-                      size="sm" 
-                      className="me-2"
-                      as={Link} 
-                      to={`/projects/${id}/user-stories/${story.id}`}
-                    >
-                      Details
-                    </Button>
-                    {!story.sprint && ( // Prikaži gumb samo za zgodbe brez sprinta
-                    <Button 
-                        variant="danger" 
-                        size="sm" 
-                        onClick={() => handleRemoveStory(story.id)}
-                      >
-                        Remove
-                      </Button>
+                    {!story.sprint && currentProjectRole === "SCRUM_MASTER" && (
+                      <>
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            className="me-2"
+                            onClick={() => handleEditStory(story)}
+                          >
+                            Edit
+                          </Button>
+                          
+                          <Button 
+                            variant="outline-info" 
+                            size="sm" 
+                            className="me-2"
+                            onClick={() => handleOpenEstimateModal(story)}
+                          >
+                            {story.story_points ? 'Re-estimate' : 'Estimate'}
+                          </Button>
+                          <Button 
+                            variant="danger" 
+                            size="sm" 
+                            onClick={() => handleRemoveStory(story.id)}
+                          >
+                            Remove
+                          </Button>
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            className="me-2"
+                            as={Link} 
+                            to={`/projects/${id}/user-stories/${story.id}`}
+                          >
+                            Details
+                          </Button>
+                      </>
                     )}
                   </div>
                 </ListGroup.Item>
@@ -224,7 +276,7 @@ const ProductBacklog = () => {
 
   // Check if backlogStories is empty or not in the expected format
   const hasStories = backlogStories && 
-                    (backlogStories.realized?.length > 0 || 
+                    (backlogStories.finished?.length > 0 || 
                      backlogStories.unrealized?.active?.length > 0 ||
                      backlogStories.unrealized?.unactive?.length > 0);
 
@@ -235,12 +287,13 @@ const ProductBacklog = () => {
           <h1>Product Backlog</h1>
           {currentProject && <p>{currentProject.name}</p>}
         </div>
+        { currentProjectRole !== "DEVELOPER" && (
         <Button 
           variant="primary"
           onClick={handleOpenAddStoryModal}
         >
           Add New User Story
-        </Button>
+        </Button>)}
       </div>
 
       {renderError()}
@@ -266,7 +319,10 @@ const ProductBacklog = () => {
                 <Nav.Link eventKey="unrealized">Unrealized Stories</Nav.Link>
               </Nav.Item>
               <Nav.Item>
-                <Nav.Link eventKey="realized">Realized Stories</Nav.Link>
+                <Nav.Link eventKey="finished">Finished Stories</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="future">Future Releases</Nav.Link>
               </Nav.Item>
             </Nav>
 
@@ -285,19 +341,123 @@ const ProductBacklog = () => {
                   <Tab.Content>
                     <Tab.Pane eventKey="unactive">
                       <h4 className="mb-3">Unassigned User Stories</h4>
-                      {renderUserStoryList(backlogStories.unrealized?.unactive || [])}
+                      {renderUserStoryList(backlogStories.unrealized?.unactive?.filter(story => story.priority !== 'WONT_HAVE') || [])}
                     </Tab.Pane>
                     <Tab.Pane eventKey="active">
                       <h4 className="mb-3">User Stories In Sprint</h4>
-                      {renderUserStoryList(backlogStories.unrealized?.active || [])}
+                      {renderUserStoryList(backlogStories.unrealized?.active?.filter(story => story.priority !== 'WONT_HAVE') || [])}
                     </Tab.Pane>
                   </Tab.Content>
                 </Tab.Container>
               </Tab.Pane>
 
-              <Tab.Pane eventKey="realized">
-                <h4 className="mb-3">Realized User Stories</h4>
-                {renderUserStoryList(backlogStories.realized || [])}
+              <Tab.Pane eventKey="finished">
+                <h4 className="mb-3">Finished User Stories</h4>
+                {renderUserStoryList((backlogStories.finished || []).filter(story => story.priority !== 'WONT_HAVE'))}
+              </Tab.Pane>
+              
+              <Tab.Pane eventKey="future">
+                <h4 className="mb-3">Future Releases</h4>
+                {/* Custom rendering for Future Releases - only show WONT_HAVE stories */}
+                {(() => {
+                  const stories = [
+                    ...(backlogStories.unrealized?.unactive?.filter(story => story.priority === 'WONT_HAVE') || []),
+                    ...(backlogStories.unrealized?.active?.filter(story => story.priority === 'WONT_HAVE') || [])
+                  ];
+                  
+                  if (!stories || stories.length === 0) {
+                    return (
+                      <ListGroup.Item className="text-muted">
+                        No stories in this category
+                      </ListGroup.Item>
+                    );
+                  }
+
+                  const wontHaveStories = stories.sort((a, b) => b.business_value - a.business_value);
+
+                  return (
+                    <Card className="mb-3">
+                      <Card.Header className="d-flex justify-content-between align-items-center">
+                        <span>
+                          <Badge bg={getPriorityBadgeVariant('WONT_HAVE')} className="me-2">
+                            {formatPriorityLabel('WONT_HAVE')}
+                          </Badge>
+                          <span className="fw-bold">
+                            {wontHaveStories.length} {wontHaveStories.length === 1 ? 'story' : 'stories'}
+                          </span>
+                        </span>
+                      </Card.Header>
+                      <ListGroup variant="flush">
+                        {wontHaveStories.map(story => (
+                          <ListGroup.Item 
+                            key={story.id}
+                            className="d-flex justify-content-between align-items-center"
+                          >
+                            <div>
+                              <h6>{story.name}</h6>
+                              <small>Business Value: {story.business_value}</small>
+                              {story.story_points ? (
+                                <small className="ms-3">Story Points: {story.story_points}</small>
+                              ) : (
+                                <small className="ms-3 text-warning">Not Estimated</small>
+                              )}
+                              {story.sprint && (
+                                <Badge bg="info" className="ms-3">In Sprint</Badge>
+                              )}
+                              <Badge bg={story.status === 'ACCEPTED' ? 'success' : 'secondary'} className="ms-3">
+                                {story.status.replace('_', ' ')}
+                              </Badge>
+                            </div>
+                            <div>
+                            {!story.sprint && currentProjectRole === "SCRUM_MASTER" && (
+                              <>
+                                  <Button 
+                                    variant="outline-primary" 
+                                    size="sm" 
+                                    className="me-2"
+                                    onClick={() => handleEditStory(story)}
+                                  >
+                                    Edit
+                                  </Button>
+                                  
+                                  <Button 
+                                    variant="outline-info" 
+                                    size="sm" 
+                                    className="me-2"
+                                    onClick={() => handleOpenEstimateModal(story)}
+                                  >
+                                    {story.story_points ? 'Re-estimate' : 'Estimate'}
+                                  </Button>
+                                  <Button 
+                                    variant="danger" 
+                                    size="sm" 
+                                    onClick={() => handleRemoveStory(story.id)}
+                                  >
+                                    Remove
+                                  </Button>
+                                  <Button 
+                                    variant="outline-primary" 
+                                    size="sm" 
+                                    className="me-2"
+                                    as={Link} 
+                                    to={`/projects/${id}/user-stories/${story.id}`}
+                                  >
+                                    Details
+                                  </Button>
+                              </>
+                            )}
+                            </div>
+                          </ListGroup.Item>
+                        ))}
+                        {wontHaveStories.length === 0 && (
+                          <ListGroup.Item className="text-muted">
+                            No stories with this priority
+                          </ListGroup.Item>
+                        )}
+                      </ListGroup>
+                    </Card>
+                  );
+                })()}
               </Tab.Pane>
             </Tab.Content>
           </Tab.Container>
@@ -313,6 +473,63 @@ const ProductBacklog = () => {
         isEditMode={isEditMode}
         projectId={id}
       />
+      
+      {/* Story Size Estimation Modal */}
+      <Modal show={showSizeModal} onHide={() => setShowSizeModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Estimate Story Points</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {storyToEstimate && (
+            <>
+              <p><strong>Story:</strong> {storyToEstimate.name}</p>
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Story Points</Form.Label>
+                  <Form.Control 
+                    type="number" 
+                    min="1" 
+                    value={newStoryPoints} 
+                    onChange={e => setNewStoryPoints(e.target.value)}
+                    placeholder="Enter story points..."
+                  />
+                  <Form.Text className="text-muted">
+                    Estimate how much effort this story requires using story points.
+                  </Form.Text>
+                </Form.Group>
+                
+                <div className="mt-3">
+                  <p className="mb-2">Common Fibonacci sequence values:</p>
+                  <div className="d-flex flex-wrap gap-2">
+                    {[1, 2, 3, 5, 8, 13, 21].map(value => (
+                      <Button 
+                        key={value} 
+                        variant={newStoryPoints === value ? "primary" : "outline-secondary"}
+                        size="sm"
+                        onClick={() => setNewStoryPoints(value)}
+                      >
+                        {value}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </Form>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSizeModal(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={handleEstimateSubmit}
+            disabled={!newStoryPoints || parseInt(newStoryPoints, 10) <= 0}
+          >
+            Save Estimate
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

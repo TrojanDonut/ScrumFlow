@@ -4,16 +4,59 @@ from . import views
 app_name = 'tasks'
 
 urlpatterns = [
-    path('stories/<int:story_id>/tasks/', views.TaskListCreateView.as_view(), name='task-list-create'),
-    path('stories/<int:story_id>/tasks/<int:pk>/', views.TaskDetailView.as_view(), name='task-detail'),
-
-    path('tasks/<int:pk>/accept/', views.TaskAcceptView.as_view(), name='task-accept'),
-    path('tasks/<int:pk>/reject/', views.TaskRejectView.as_view(), name='task-reject'),
-    path('tasks/<int:pk>/complete/', views.TaskCompleteView.as_view(), name='task-complete'),
-    # path('tasks/<int:pk>/logs/', views.TimeLogListCreateView.as_view(), name='time-log-list-create'),
-    # path('tasks/logs/<int:pk>/', views.TimeLogDetailView.as_view(), name='time-log-detail'),
-    # path('user/tasks/', views.UserTasksView.as_view(), name='user-tasks'),
-    # path('user/time-logs/', views.UserTimeLogsView.as_view(), name='user-time-logs'),
-    
-    path('projects/<int:project_id>/tasks/', views.ProjectTasksView.as_view(), name='project-tasks'),
+    path(
+        'tasks/',
+        views.TaskListCreateView.as_view(),
+        name='tasks-list-create'
+    ),
+    path(
+        'tasks/<int:pk>/',
+        views.TaskDetailView.as_view(),
+        name='task-detail'
+    ),
+    path(
+        'stories/<int:story_id>/tasks/',
+        views.StoryTasksView.as_view(),
+        name='story-tasks'
+    ),
+    path(
+        'projects/<int:project_id>/tasks/',
+        views.ProjectTasksView.as_view(),
+        name='project-tasks'
+    ),
+    path(
+        'tasks/<int:task_id>/assign/',
+        views.TaskAssignView.as_view(),
+        name='task-assign'
+    ),
+    path(
+        'tasks/<int:task_id>/unassign/',
+        views.TaskUnassignView.as_view(),
+        name='task-unassign'
+    ),
+    path(
+        'tasks/<int:task_id>/start/',
+        views.TaskStartView.as_view(),
+        name='task-start'
+    ),
+    path(
+        'tasks/<int:task_id>/stop/',
+        views.TaskStopView.as_view(),
+        name='task-stop'
+    ),
+    path(
+        'tasks/<int:task_id>/complete/',
+        views.TaskCompleteView.as_view(),
+        name='task-complete'
+    ),
+    path(
+        'tasks/<int:task_id>/logs/',
+        views.TimeLogListView.as_view(),
+        name='task-timelogs'
+    ),
+    path(
+        'user/timelogs/',
+        views.UserTimeLogListView.as_view(),
+        name='user-timelogs'
+    ),
 ]

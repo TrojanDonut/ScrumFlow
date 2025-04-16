@@ -41,6 +41,7 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
         business_value: userStoryData.business_value || defaultState.business_value,
         status: userStoryData.status || defaultState.status,
         sprint: userStoryData.sprint || defaultState.sprint,
+        story_points: userStoryData.story_points || defaultState.story_points,
       });
     } else {
       setFormData(getDefaultState());
@@ -66,7 +67,7 @@ const AddUserStory = ({ show, handleClose, onUserStoryAdded, userStoryData, isEd
       ...formData,
       sprint: formData.sprint ? parseInt(formData.sprint, 10) : null,
       business_value: parseInt(formData.business_value, 10),
-      story_points: parseInt(formData.story_points, 10),
+      story_points: formData.story_points ? parseInt(formData.story_points, 10) : null,
       project: projectId,
     };
 

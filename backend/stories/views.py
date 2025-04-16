@@ -1,20 +1,62 @@
 from rest_framework import generics, status, views, viewsets, serializers
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.views import APIView
 from .models import UserStory
 from .serializers import UserStorySerializer
 import logging
 from django.shortcuts import get_object_or_404
+from users.permissions import (
+    IsProjectMember, 
+    IsProductOwnerOrScrumMaster, 
+    IsScrumMaster,
+    IsProjectMemberFromSprint,
+    IsScrumMasterFromSprint
+)
+from projects.models import ProjectMember
 
 # Create your logger
 logger = logging.getLogger(__name__)
 
 
+class IsProductOwnerOrScrumMasterFromData(BasePermission):
+    """
+    Permission to check if user is either a Product Owner or Scrum Master based on project_id in request data.
+    This is used for endpoints where project_id comes from request data instead of URL.
+    """
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        
+        # For POST requests, get project_id from request data
+        if request.method == 'POST':
+            project_id = request.data.get('project')
+            if not project_id:
+                return False
+                
+            return ProjectMember.objects.filter(
+                project_id=project_id,
+                user=request.user,
+                role__in=[ProjectMember.Role.PRODUCT_OWNER, ProjectMember.Role.SCRUM_MASTER]
+            ).exists()
+            
+        return False  # Default to False for other methods
+
+
 class UserStoryListCreateView(generics.ListCreateAPIView):
     """API view for listing and creating user stories."""
     serializer_class = UserStorySerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """
+        Get permissions based on the request method:
+        - List: Any authenticated project member can view stories
+        - Create: Only Product Owner and Scrum Master can create stories
+        """
+        if self.request.method == 'GET':
+            return [IsAuthenticated(), IsProjectMember()]
+        return [IsAuthenticated(), IsProductOwnerOrScrumMasterFromData()]
 
     def get_queryset(self):
         """Return all user stories."""
@@ -41,7 +83,16 @@ class UserStoryListCreateView(generics.ListCreateAPIView):
 class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     """API view for retrieving, updating, and deleting a user story."""
     serializer_class = UserStorySerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """
+        Get permissions based on the request method:
+        - Retrieve: Any authenticated project member can view story details
+        - Update/Delete: Only Product Owner and Scrum Master can modify stories
+        """
+        if self.request.method == 'GET':
+            return [IsAuthenticated(), IsProjectMember()]
+        return [IsAuthenticated(), IsProductOwnerOrScrumMaster()]
 
     def get_queryset(self):
         """Return the user story based on the URL parameters."""
@@ -61,6 +112,9 @@ class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
         if sprint_id and sprint_id != 'undefined':
             queryset = queryset.filter(sprint_id=sprint_id)
         
+        # Only fetch non-deleted stories
+        queryset = queryset.filter(is_deleted=False)
+        
         # Filter by story ID
         return queryset.filter(id=story_id)
 
@@ -72,16 +126,21 @@ class UserStoryDetailView(generics.RetrieveUpdateDestroyAPIView):
         return obj
     
     def destroy(self, request, *args, **kwargs):
-        """Override destroy method to handle deletion."""
+        """Override destroy method to handle soft deletion."""
         instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response({"message": "Story deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        # Instead of deleting, mark as deleted
+        instance.is_deleted = True
+        instance.save()
+        return Response({"message": "Story marked as deleted successfully."}, status=status.HTTP_200_OK)
 
 
 class RemoveStoryFromSprintView(APIView):
     """API view for removing a story from a sprint."""
-    permission_classes = [IsAuthenticated]
-
+    
+    def get_permissions(self):
+        """Only Scrum Master can remove stories from sprints"""
+        return [IsAuthenticated(), IsScrumMasterFromSprint()]
+    
     def post(self, request, story_id, *args, **kwargs):
         try:
             story = UserStory.objects.get(id=story_id)
@@ -97,17 +156,23 @@ class RemoveStoryFromSprintView(APIView):
 class UserStoryBacklogView(generics.ListAPIView):
     """API view for listing user stories in the backlog."""
     serializer_class = UserStorySerializer
-    permission_classes = [IsAuthenticated]
-
+    
+    def get_permissions(self):
+        """Any project member can view the backlog"""
+        return [IsAuthenticated(), IsProjectMember()]
+    
     def get_queryset(self):
         """Return all user stories in the backlog."""
-        return UserStory.objects.filter(sprint=None)
+        return UserStory.objects.filter(sprint=None, is_deleted=False)
 
 
 class ProjectBacklogView(generics.ListAPIView):
     """API view for listing user stories in the backlog for a specific project."""
     serializer_class = UserStorySerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """Any project member can view the project backlog"""
+        return [IsAuthenticated(), IsProjectMember()]
 
     def get_queryset(self):
         """Return all user stories in the backlog for a specific project."""
@@ -116,6 +181,10 @@ class ProjectBacklogView(generics.ListAPIView):
         
         # Get all stories for the project
         all_stories = UserStory.objects.filter(project_id=project_id)
+        
+        # Exclude deleted stories
+        all_stories = all_stories.filter(is_deleted=False)
+        
         print(f"Total stories for project: {all_stories.count()}")
         
         # No longer filtering out stories with sprints
@@ -129,8 +198,8 @@ class ProjectBacklogView(generics.ListAPIView):
         # Categorizing stories according to the new requirements
         stories = serializer.data
         
-        # Divide stories into realized and unrealized
-        realized_stories = [story for story in stories if story['status'] == 'ACCEPTED']
+        # Divide stories into finished and unrealized
+        finished_stories = [story for story in stories if story['status'] == 'ACCEPTED']
         unrealized_stories = [story for story in stories if story['status'] != 'ACCEPTED']
         
         # Divide unrealized stories into active (in a sprint) and unactive (not in a sprint)
@@ -139,14 +208,14 @@ class ProjectBacklogView(generics.ListAPIView):
         
         # Prepare the response data structure
         response_data = {
-            'realized': realized_stories,
+            'finished': finished_stories,
             'unrealized': {
                 'active': active_stories,
                 'unactive': unactive_stories
             }
         }
         
-        print(f"Returning categorized stories: {len(realized_stories)} realized, {len(active_stories)} active unrealized, {len(unactive_stories)} unactive unrealized")
+        print(f"Returning categorized stories: {len(finished_stories)} finished, {len(active_stories)} active unrealized, {len(unactive_stories)} unactive unrealized")
         
         return Response(response_data)
 
@@ -173,12 +242,15 @@ class UserStoryCommentListCreateView(generics.ListCreateAPIView):
 
 class SprintStoriesView(views.APIView):
     """API view for managing stories in a sprint."""
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """Any project member can view stories in a sprint"""
+        return [IsAuthenticated(), IsProjectMemberFromSprint()]
 
     def get(self, request, sprint_id, *args, **kwargs):
         """Retrieve all user stories for a specific sprint."""
         try:
-            stories = UserStory.objects.filter(sprint_id=sprint_id)
+            stories = UserStory.objects.filter(sprint_id=sprint_id, is_deleted=False)
             serializer = UserStorySerializer(stories, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -223,11 +295,176 @@ class PlanningPokerView(views.APIView):
 class UserStoryViewSet(viewsets.ModelViewSet):
     queryset = UserStory.objects.all()
     serializer_class = UserStorySerializer
+    
+    def get_permissions(self):
+        """
+        Get permissions based on the request method:
+        - List/Retrieve: Any authenticated project member can view stories
+        - Create/Update/Delete: Only Product Owner and Scrum Master can modify stories
+        """
+        if self.request.method in ['GET']:
+            return [IsAuthenticated(), IsProjectMember()]
+        return [IsAuthenticated(), IsProductOwnerOrScrumMaster()]
 
     def get_queryset(self):
         sprint_id = self.kwargs['sprint_id']
-        return self.queryset.filter(sprint_id=sprint_id)
+        return self.queryset.filter(sprint_id=sprint_id, is_deleted=False)
 
     def perform_create(self, serializer):
         """Override to set the created_by field."""
         serializer.save(created_by=self.request.user)
+
+
+class UserStoryUpdatePointsView(APIView):
+    """API view for updating story points for a user story."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, story_id, *args, **kwargs):
+        """Update story points for a user story."""
+        try:
+            story = UserStory.objects.get(id=story_id, is_deleted=False)
+            
+            # Get story points from request data
+            story_points = request.data.get('story_points')
+            
+            if story_points is None:
+                return Response(
+                    {"error": "Story points are required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            # Update story points
+            story.story_points = story_points
+            story.save()
+            
+            serializer = UserStorySerializer(story)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except UserStory.DoesNotExist:
+            return Response(
+                {"error": "Story not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error updating story points for story {story_id}: {e}")
+            return Response(
+                {"error": f"Failed to update story points: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class UserStoryUpdateStatusView(APIView):
+    """API view for updating status for a user story."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, story_id, *args, **kwargs):
+        """Update status for a user story."""
+        try:
+            story = UserStory.objects.get(id=story_id, is_deleted=False)
+            
+            # Get status from request data
+            status_value = request.data.get('status')
+            
+            if status_value is None:
+                return Response(
+                    {"error": "Status is required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            # Validate status
+            if status_value not in [choice[0] for choice in UserStory.Status.choices]:
+                return Response(
+                    {"error": f"Invalid status. Valid options are: {', '.join([choice[0] for choice in UserStory.Status.choices])}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            # Update status
+            story.status = status_value
+            story.save()
+            
+            serializer = UserStorySerializer(story)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except UserStory.DoesNotExist:
+            return Response(
+                {"error": "Story not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error updating status for story {story_id}: {e}")
+            return Response(
+                {"error": f"Failed to update status: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class MoveStoryToSprintView(APIView):
+    """API view for moving a story to a specific sprint."""
+    
+    def get_permissions(self):
+        """Only Scrum Master can move stories to sprints"""
+        return [IsAuthenticated(), IsScrumMasterFromSprint()]
+
+    def post(self, request, story_id, sprint_id, *args, **kwargs):
+        """Move a story to a specific sprint."""
+        try:
+            story = UserStory.objects.get(id=story_id, is_deleted=False)
+            
+            from sprints.models import Sprint
+            sprint = Sprint.objects.get(id=sprint_id)
+            
+            # Move story to sprint
+            story.sprint = sprint
+            story.save()
+            
+            serializer = UserStorySerializer(story)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except UserStory.DoesNotExist:
+            return Response(
+                {"error": "Story not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Sprint.DoesNotExist:
+            return Response(
+                {"error": "Sprint not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error moving story {story_id} to sprint {sprint_id}: {e}")
+            return Response(
+                {"error": f"Failed to move story to sprint: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class MarkStoryAsRealizedView(APIView):
+    """API view for marking a story as realized (ACCEPTED status)."""
+    
+    def get_permissions(self):
+        """Only Scrum Master can mark stories as realized"""
+        return [IsAuthenticated(), IsScrumMasterFromSprint()]
+
+    def post(self, request, story_id, *args, **kwargs):
+        """Mark a story as realized."""
+        try:
+            story = UserStory.objects.get(id=story_id, is_deleted=False)
+            
+            # Mark story as realized (ACCEPTED)
+            story.status = UserStory.Status.ACCEPTED
+            story.save()
+            
+            serializer = UserStorySerializer(story)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except UserStory.DoesNotExist:
+            return Response(
+                {"error": "Story not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error marking story {story_id} as realized: {e}")
+            return Response(
+                {"error": f"Failed to mark story as realized: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
