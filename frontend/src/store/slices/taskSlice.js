@@ -200,7 +200,7 @@ const taskSlice = createSlice({
       })
       .addCase(addTaskToStory.fulfilled, (state, action) => {
         state.loading = false;
-        state.tasks.push(action.payload);
+        state.tasksByStoryId[action.payload.story].push(action.payload);
       })
       .addCase(addTaskToStory.rejected, (state, action) => {
         state.loading = false;

@@ -65,7 +65,10 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       handleClose={() => setShowAddTaskModal(false)}
       storyId={story.id}
       users={users}
-      onTaskAdded={onTaskAdded}
+      onTaskAdded={(storyId, taskData) => {
+        onTaskAdded(storyId, taskData);
+        handleClose();
+      }}
     />
     </>
   );

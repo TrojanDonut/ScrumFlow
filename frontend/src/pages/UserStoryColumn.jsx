@@ -3,7 +3,7 @@ import { ListGroup, Button, Collapse } from 'react-bootstrap';
 import StoryTaskDetails from './StoryTaskDetails';
 import { generateTaskStatusTag } from './TaskUtils';
 import { useDispatch } from 'react-redux';
-import { addTaskToStory } from '../store/slices/taskSlice';
+import { addTaskToStory, fetchTasksByProject } from '../store/slices/taskSlice';
 import { fetchStories } from '../store/slices/storySlice';
 
 const UserStoryColumn = ({
@@ -16,10 +16,12 @@ const UserStoryColumn = ({
   tasksByStoryId,
   projectUsers,
   sprint,
+  onTaskAdded,
 }) => {
   const [showModal, setShowModal] = useState(false); // State to control modal visibility
   const [selectedStory, setSelectedStory] = useState(null); // State to store the selected story
   const dispatch = useDispatch();
+  console.log(tasksByStoryId);
 
   const handleShowDetails = (story) => {
     setSelectedStory(story);
@@ -43,19 +45,6 @@ const UserStoryColumn = ({
   };
 
   const sprintStatus = getSprintStatus();
-  
-  const handleAddTask = (storyId, taskData) => {
-    dispatch(addTaskToStory({ storyId, taskData }))
-      .unwrap()
-      .then((newTask) => {
-        console.log('Task added:', newTask);
-        // Refetch stories for the sprint
-        dispatch(fetchStories({ sprintId: sprint.id }));  // todo
-      })
-      .catch((error) => {
-        console.error('Failed to add task:', error);
-      });
-  };
 
   // Render the StoryTaskDetails modal
   const renderStoryTaskDetailsModal = () => {
@@ -69,7 +58,7 @@ const UserStoryColumn = ({
         tasks={tasksByStoryId[selectedStory.id] || []}
         users={projectUsers}
         sprintStatus={sprintStatus}
-        onTaskAdded={handleAddTask}
+        onTaskAdded={onTaskAdded}
       />
     );
   };

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
 import { fetchStories, removeStoryFromSprint, updateStory, fetchBacklogStories } from '../store/slices/storySlice';
 import { fetchSprintById } from '../store/slices/sprintSlice';
-import { fetchTasksByProject, fetchUsersForProject } from '../store/slices/taskSlice';
+import { fetchTasksByProject, fetchUsersForProject, addTaskToStory } from '../store/slices/taskSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import AddUserStory from './AddUserStory';
 import UserStoryColumn from './UserStoryColumn'; // Import the new component
@@ -70,6 +70,19 @@ const UserStories = () => {
     }
   };
 
+  const handleAddTask = (storyId, taskData) => {
+    dispatch(addTaskToStory({ storyId, taskData }))
+      .unwrap()
+      .then((newTask) => {
+        console.log('Task added:', newTask);
+        // Refetch tasks
+        dispatch(fetchTasksByProject(projectId));
+      })
+      .catch((error) => {
+        console.error('Failed to add task:', error);
+      });
+  };
+
   // Divide stories into categories based on their state
   const states = ['NOT_STARTED', 'IN_PROGRESS', 'DONE', 'ACCEPTED', 'REJECTED'];
   const categorizedStories = states.map((state) =>
@@ -119,6 +132,7 @@ const UserStories = () => {
           tasksByStoryId={tasksByStoryId}
           projectUsers={projectUsers}
           sprint={currentSprint}
+          onTaskAdded={handleAddTask}
         />
       ))}
     </div>
