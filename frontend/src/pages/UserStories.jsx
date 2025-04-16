@@ -118,6 +118,7 @@ const UserStories = () => {
           onRemoveFromSprint={handleRemoveFromSprint}
           tasksByStoryId={tasksByStoryId}
           projectUsers={projectUsers}
+          sprint={currentSprint}
         />
       ))}
     </div>

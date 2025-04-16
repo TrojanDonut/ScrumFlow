@@ -3,7 +3,7 @@ import { Modal, Button } from 'react-bootstrap';
 import { generateTaskStatusTag } from './TaskUtils';
 import AddTaskModal from './AddTaskModal';
 
-const StoryTaskDetails = ({ show, handleClose, story, tasks, users, onTaskAdded }) => {
+const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, onTaskAdded }) => {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   
   // get usernames for assigned tasks
@@ -48,7 +48,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, onTaskAdded 
         )}
       </Modal.Body>
       <Modal.Footer>
-        {story.status !== 'DONE' && (  // todo - also check if the sprint is active
+        {story.status !== 'DONE' && sprintStatus === 'active' && (  // todo - also check if the sprint is active
           <Button variant="outline-primary" onClick={() => setShowAddTaskModal(true)}>
               Add new task
           </Button>

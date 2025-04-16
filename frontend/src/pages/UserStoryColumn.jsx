@@ -68,6 +68,7 @@ const UserStoryColumn = ({
         story={selectedStory}
         tasks={tasksByStoryId[selectedStory.id] || []}
         users={projectUsers}
+        sprintStatus={sprintStatus}
         onTaskAdded={handleAddTask}
       />
     );

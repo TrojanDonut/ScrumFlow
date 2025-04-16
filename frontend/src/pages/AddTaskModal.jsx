@@ -85,7 +85,7 @@ const AddTaskModal = ({ show, handleClose, storyId, users, onTaskAdded }) => {
               value={taskData.assigned_to || ''}
               onChange={handleInputChange}
             >
-              <option value="">...</option>
+              <option value="">-- assign developer later --</option>
               {users.map((user) => (
                 <option key={user.user.id} value={user.user.id}>
                   {user.user.username}
