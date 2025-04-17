@@ -11,6 +11,9 @@ class UserStorySerializer(serializers.ModelSerializer):
                   'sprint', 'project', 'acceptance_tests', 'business_value',
                   'created_by', 'created_at', 'updated_at', 'assigned_to']
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'sprint': {'required': False, 'allow_null': True},
+        }
 
     def validate(self, data):
         """Custom validation for the UserStory model."""

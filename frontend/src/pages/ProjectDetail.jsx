@@ -6,13 +6,14 @@ import { fetchProjectById } from '../store/slices/projectSlice';
 import { formatErrorMessage } from '../utils/errorUtils';
 import axios from "axios";
 import { createSprint, fetchSprints } from "../store/slices/sprintSlice";
+import { setCurrentUserRole } from '../store/slices/authSlice';
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { currentProject } = useSelector(state => state.projects);
   const { sprints, error, loading } = useSelector(state => state.sprints);
-  const { user } = useSelector(state => state.auth);
+  const { user, currentProjectRole } = useSelector(state => state.auth);
 
   const [formData, setFormData] = useState({
     start_date: "",
@@ -24,6 +25,14 @@ const ProjectDetail = () => {
     dispatch(fetchProjectById(id));
     dispatch(fetchSprints(id));
   }, [dispatch, id]);
+
+  useEffect(() => {
+    if (currentProject && user) {
+      const role = currentProject.members?.find(member => member.user.id === user.id)?.role || null;
+      dispatch(setCurrentUserRole(role)); // Save the role in the state
+    }
+  }, [currentProject, user, dispatch]);
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -102,7 +111,7 @@ const ProjectDetail = () => {
           )}
         </Card.Body>
       </Card>
-
+      {currentProjectRole === 'SCRUM_MASTER' && (
       <Card className="mt-4">
         <Card.Body>
           <Card.Title>Create a New Sprint</Card.Title>
@@ -116,7 +125,7 @@ const ProjectDetail = () => {
               <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="form-control" required />
             </div>
             <div className="mb-3">
-              <label className="form-label">Velocity (v točkah):</label>
+              <label className="form-label">Velocity (points):</label>
               <input type="number" name="velocity" value={formData.velocity} onChange={handleChange} className="form-control" required />
             </div>
             <Button type="submit" variant="primary" disabled={loading}>
@@ -125,9 +134,10 @@ const ProjectDetail = () => {
           </form>
           {error && <Alert variant="danger" className="mt-3">{formatErrorMessage(error)}</Alert>}
         </Card.Body>
-      </Card>
+      </Card>)}
 
-      <Card className="mt-4">
+      { currentProjectRole !== "PRODUCT_OWNER" && 
+      (<Card className="mt-4">
         <Card.Body>
           <Card.Title>Existing Sprints</Card.Title>
           {sprints.length > 0 ? (
@@ -136,7 +146,7 @@ const ProjectDetail = () => {
                 <ListGroup.Item key={sprint.id}>
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
-                      Sprint from {formatDate(sprint.start_date)} to {formatDate(sprint.end_date)} (Velocity (v točkah): {sprint.velocity})
+                      Sprint from {formatDate(sprint.start_date)} to {formatDate(sprint.end_date)} (Velocity (points): {sprint.velocity})
                     </div>
                     <Button
                       variant="outline-primary"
@@ -153,7 +163,7 @@ const ProjectDetail = () => {
             <p>No sprints available.</p>
           )}
         </Card.Body>
-      </Card>
+      </Card>)}
     </div>
   );
 };

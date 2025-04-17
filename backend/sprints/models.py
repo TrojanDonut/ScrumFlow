@@ -11,6 +11,7 @@ class Sprint(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     velocity = models.IntegerField()
+    is_completed = models.BooleanField(default=False)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
