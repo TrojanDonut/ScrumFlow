@@ -269,7 +269,7 @@ const ProductBacklog = () => {
                           </Button>
                       </>
                     )}
-                    {activeTab === 'unrealized' && story.sprint && (
+                    {activeTab === 'unrealized' && story.sprint && currentProjectRole === "SCRUM_MASTER" && (
                         <Button 
                           variant="outline-secondary" 
                             size="sm" 
