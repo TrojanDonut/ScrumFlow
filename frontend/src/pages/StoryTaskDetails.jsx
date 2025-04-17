@@ -5,11 +5,24 @@ import AddTaskModal from './AddTaskModal';
 
 const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, onTaskAdded }) => {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [isAddingTask, setIsAddingTask] = useState(false);
   
   // get usernames for assigned tasks
   const getUsername = (id) => {
     const user = users.find((user) => user.user.id === id);
     return user ? user.user.username : 'nobody';
+  };
+
+  const handleTaskAdded = async (storyId, taskData) => {
+    setIsAddingTask(true);
+    try {
+      await onTaskAdded(storyId, taskData);
+      setShowAddTaskModal(false);
+    } catch (error) {
+      console.error('Failed to add task:', error);
+    } finally {
+      setIsAddingTask(false);
+    }
   };
 
   return (
@@ -48,9 +61,13 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         )}
       </Modal.Body>
       <Modal.Footer>
-        {story.status !== 'DONE' && sprintStatus === 'active' && (  // todo - also check if the sprint is active
-          <Button variant="outline-primary" onClick={() => setShowAddTaskModal(true)}>
-              Add new task
+        {story.status !== 'DONE' && sprintStatus === 'active' && (
+          <Button 
+            variant="outline-primary" 
+            onClick={() => setShowAddTaskModal(true)}
+            disabled={isAddingTask}
+          >
+            {isAddingTask ? 'Adding Task...' : 'Add new task'}
           </Button>
         )}
         <Button variant="secondary" onClick={handleClose}>
@@ -65,10 +82,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       handleClose={() => setShowAddTaskModal(false)}
       storyId={story.id}
       users={users}
-      onTaskAdded={(storyId, taskData) => {
-        onTaskAdded(storyId, taskData);
-        handleClose();
-      }}
+      onTaskAdded={handleTaskAdded}
     />
     </>
   );

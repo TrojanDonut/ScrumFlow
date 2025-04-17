@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
 import { fetchStories, removeStoryFromSprint, fetchBacklogStories, addStoryToSprint } from '../store/slices/storySlice';
 import { fetchSprintById } from '../store/slices/sprintSlice';
-import { fetchTasksByProject, fetchUsersForProject, addTaskToStory } from '../store/slices/taskSlice';
+import { fetchTasksByProject, fetchUsersForProject, addTaskToStory, addTaskToStoryLocally, removeTaskLocally } from '../store/slices/taskSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import AddUserStory from './AddUserStory';
 import UserStoryColumn from './UserStoryColumn'; // Import the new component
@@ -131,15 +131,30 @@ const UserStories = () => {
   };
 
   const handleAddTask = (storyId, taskData) => {
+    // Generate a temporary ID for optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticTask = {
+      ...taskData,
+      id: tempId,
+      isOptimistic: true
+    };
+
+    // Dispatch optimistic update
+    dispatch(addTaskToStoryLocally({ task: optimisticTask, storyId }));
+
+    // Make the API call
     dispatch(addTaskToStory({ storyId, taskData }))
       .unwrap()
       .then((newTask) => {
         console.log('Task added:', newTask);
-        // Refetch tasks
-        dispatch(fetchTasksByProject(projectId));
+        // Remove the optimistic task and add the real one
+        dispatch(addTaskToStoryLocally({ task: newTask.task, storyId }));
       })
       .catch((error) => {
         console.error('Failed to add task:', error);
+        setError('Failed to add task: ' + (error.message || 'Unknown error'));
+        // Remove the optimistic task on error
+        dispatch(removeTaskLocally({ taskId: tempId, storyId }));
       });
   };
 
