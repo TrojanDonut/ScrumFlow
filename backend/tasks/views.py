@@ -518,3 +518,20 @@ class UserTimeLogListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return TimeLog.objects.filter(user=user)
+
+
+class StartTaskSessionView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, task_id):
+        task = Task.objects.get(id=task_id)
+        task.start_session(request.user)
+        return Response({"message": "Task session started."})
+
+class StopTaskSessionView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, task_id):
+        task = Task.objects.get(id=task_id)
+        task.stop_session(request.user)
+        return Response({"message": "Task session stopped and time logged."})
