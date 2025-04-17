@@ -42,6 +42,31 @@ export const fetchTasksByProject = createAsyncThunk(
   }
 );
 
+export const fetchUsersForProject = createAsyncThunk(
+  'tasks/fetchUsersForProject',
+  async (projectId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/projects/${projectId}/members/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch users for project');
+    }
+  }
+);
+
 export const fetchTasksStory = createAsyncThunk(
   'tasks/fetchTasks',
   async (storyId, { rejectWithValue, getState }) => {
@@ -66,14 +91,31 @@ export const fetchTasksStory = createAsyncThunk(
   }
 );
 
-export const createTask = createAsyncThunk(
-  'tasks/createTask',
-  async ({ storyId, taskData }, { rejectWithValue }) => {
+export const addTaskToStory = createAsyncThunk(
+  'tasks/addTaskToStory',
+  async ({ storyId, taskData }, { rejectWithValue, getState }) => {
     try {
-      const response = await axios.post(`${API_URL}/stories/${storyId}/tasks/`, taskData);
-      return response.data;
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/stories/${storyId}/tasks/`,
+        taskData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      return { task: response.data, storyId };
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || 'Failed to add task');
     }
   }
 );
@@ -96,16 +138,49 @@ const taskSlice = createSlice({
     tasksByStoryId: {},
     loadingByProjectId: {},
     loadingByStoryId: {},
+    projectUsers: {},
     error: null,
   },
   reducers: {
     clearTaskError: (state) => {
       state.error = null;
     },
+    addTaskToStoryLocally: (state, action) => {
+      const { task, storyId } = action.payload;
+      if (!state.tasksByStoryId[storyId]) {
+        state.tasksByStoryId[storyId] = [];
+      }
+      // Remove any existing task with the same ID (for optimistic updates)
+      state.tasksByStoryId[storyId] = state.tasksByStoryId[storyId].filter(t => t.id !== task.id);
+      state.tasksByStoryId[storyId].push(task);
+    },
+    removeTaskLocally: (state, action) => {
+      const { taskId, storyId } = action.payload;
+      if (state.tasksByStoryId[storyId]) {
+        state.tasksByStoryId[storyId] = state.tasksByStoryId[storyId].filter(task => task.id !== taskId);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch tasks by project reducers
+      // Fetch users by project reducers
+      .addCase(fetchUsersForProject.pending, (state, action) => {
+        console.log(`Fetching users for project ${action.meta.arg}`);
+        state.loadingByProjectId[action.meta.arg] = true;
+        state.error = null;
+      })
+      .addCase(fetchUsersForProject.fulfilled, (state, action) => {
+        console.log(`Users fetched for project ${action.meta.arg}:`, action.payload);
+        state.projectUsers = action.payload;
+        state.loadingByProjectId[action.meta.arg] = false;
+      })
+      .addCase(fetchUsersForProject.rejected, (state, action) => {
+        console.error(`Failed to fetch users for project ${action.meta.arg}:`, action.payload);
+        state.loadingByProjectId[action.meta.arg] = false;
+        state.error = action.payload || 'Failed to fetch users for project';
+      })  
+    
+    // Fetch tasks by project reducers
       .addCase(fetchTasksByProject.pending, (state, action) => {
         console.log(`Fetching tasks for project ${action.meta.arg}`);
         state.loadingByProjectId[action.meta.arg] = true;
@@ -139,15 +214,19 @@ const taskSlice = createSlice({
       })
 
       // Create task reducers
-      .addCase(createTask.pending, (state) => {
+      .addCase(addTaskToStory.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(createTask.fulfilled, (state, action) => {
+      .addCase(addTaskToStory.fulfilled, (state, action) => {
         state.loading = false;
-        state.tasks.push(action.payload);
+        const { task, storyId } = action.payload;
+        if (!state.tasksByStoryId[storyId]) {
+          state.tasksByStoryId[storyId] = [];
+        }
+        state.tasksByStoryId[storyId].push(task);
       })
-      .addCase(createTask.rejected, (state, action) => {
+      .addCase(addTaskToStory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to create task';
       })
@@ -171,5 +250,5 @@ const taskSlice = createSlice({
   },
 });
 
-export const { clearTaskError } = taskSlice.actions;
+export const { clearTaskError, addTaskToStoryLocally, removeTaskLocally } = taskSlice.actions;
 export default taskSlice.reducer;

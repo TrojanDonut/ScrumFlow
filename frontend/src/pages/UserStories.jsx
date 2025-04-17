@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
 import { fetchStories, removeStoryFromSprint, fetchBacklogStories, addStoryToSprint } from '../store/slices/storySlice';
 import { fetchSprintById } from '../store/slices/sprintSlice';
-import { fetchTasksByProject } from '../store/slices/taskSlice';
+import { fetchTasksByProject, fetchUsersForProject, addTaskToStory, addTaskToStoryLocally, removeTaskLocally } from '../store/slices/taskSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import AddUserStory from './AddUserStory';
 import UserStoryColumn from './UserStoryColumn'; // Import the new component
@@ -25,17 +25,18 @@ const UserStories = () => {
   const { stories, backlogStories } = useSelector((state) => state.stories);
   const { loading, error: sprintError, currentSprint } = useSelector((state) => state.sprints);
   const { tasksByStoryId } = useSelector((state) => state.tasks);
+  const { projectUsers } = useSelector((state) => state.tasks);
   const { currentProjectRole } = useSelector(state => state.auth);
-  
+
   useEffect(() => {
     console.log('UserStories useEffect running with projectId:', projectId, 'sprintId:', sprintId);
-    
+
     // Check if we have the required IDs
     if (!projectId || !sprintId) {
       console.error('Missing projectId or sprintId in UserStories component');
       return;
     }
-    
+
     // Dispatch actions to fetch data
     dispatch(fetchStories({ projectId, sprintId }))
       .then(result => {
@@ -44,10 +45,11 @@ const UserStories = () => {
       .catch(error => {
         console.error('fetchStories error:', error);
       });
-      
+
     dispatch(fetchBacklogStories(projectId));
     dispatch(fetchSprintById({ projectId, sprintId }));
     dispatch(fetchTasksByProject(projectId));
+    dispatch(fetchUsersForProject(projectId));
   }, [projectId, sprintId, dispatch]);
 
   const handleUserStoryAdded = (newStory) => {
@@ -74,15 +76,15 @@ const UserStories = () => {
     try {
       console.log('Attempting to add stories to sprint:', selectedStories);
       // Calculate current sprint load
-      const currentSprintLoad = stories.reduce((total, story) => 
+      const currentSprintLoad = stories.reduce((total, story) =>
         total + (story.story_points || 0), 0);
-      
+
       // Calculate additional load from selected stories
-      const additionalLoad = selectedStories.reduce((total, story) => 
+      const additionalLoad = selectedStories.reduce((total, story) =>
         total + (story.story_points || 0), 0);
-      
+
       console.log(`Current sprint load: ${currentSprintLoad}, additional load: ${additionalLoad}`);
-      
+
       // Check if we have velocity and if adding would exceed it
       if (currentSprint && currentSprint.velocity) {
         if ((currentSprintLoad + additionalLoad) > currentSprint.velocity) {
@@ -90,7 +92,7 @@ const UserStories = () => {
           return;
         }
       }
-      
+
       // Check if all stories have story points
       const unestimatedStories = selectedStories.filter(story => !story.story_points);
       if (unestimatedStories.length > 0) {
@@ -98,7 +100,7 @@ const UserStories = () => {
         setError(`Cannot add unestimated stories to sprint: ${storyNames}`);
         return;
       }
-      
+
       // If all validations pass, add stories to sprint
       console.log(`Adding ${selectedStories.length} stories to sprint ${sprintId}`);
       for (const story of selectedStories) {
@@ -106,17 +108,17 @@ const UserStories = () => {
         const result = await dispatch(addStoryToSprint({ storyId: story.id, sprintId })).unwrap();
         console.log(`Story ${story.id} added with result:`, result);
       }
-      
+
       console.log('All stories added to sprint, now refreshing data...');
-      
+
       // Refresh data with explicit promise handling for debugging
       try {
         const storiesResult = await dispatch(fetchStories({ projectId, sprintId })).unwrap();
         console.log('Sprint stories refreshed:', storiesResult);
-        
+
         const backlogResult = await dispatch(fetchBacklogStories(projectId)).unwrap();
         console.log('Backlog stories refreshed:', backlogResult);
-        
+
         setError(null);
         console.log('Successfully refreshed all story data after adding to sprint');
       } catch (refreshError) {
@@ -126,6 +128,34 @@ const UserStories = () => {
       console.error('Failed to add stories to sprint:', err);
       setError('Failed to add stories to sprint: ' + (err.message || 'Unknown error'));
     }
+  };
+
+  const handleAddTask = (storyId, taskData) => {
+    // Generate a temporary ID for optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticTask = {
+      ...taskData,
+      id: tempId,
+      isOptimistic: true
+    };
+
+    // Dispatch optimistic update
+    dispatch(addTaskToStoryLocally({ task: optimisticTask, storyId }));
+
+    // Make the API call
+    dispatch(addTaskToStory({ storyId, taskData }))
+      .unwrap()
+      .then((newTask) => {
+        console.log('Task added:', newTask);
+        // Remove the optimistic task and add the real one
+        dispatch(addTaskToStoryLocally({ task: newTask.task, storyId }));
+      })
+      .catch((error) => {
+        console.error('Failed to add task:', error);
+        setError('Failed to add task: ' + (error.message || 'Unknown error'));
+        // Remove the optimistic task on error
+        dispatch(removeTaskLocally({ taskId: tempId, storyId }));
+      });
   };
 
   // Divide stories into categories based on their state
@@ -159,7 +189,7 @@ const UserStories = () => {
         Edit Sprint
       </Button>)}
     </div>
-    
+
     {currentSprint && (
       <div className="mt-3 mb-4 p-3 border rounded bg-light">
         <div className="d-flex justify-content-between align-items-center mb-2">
@@ -170,19 +200,19 @@ const UserStories = () => {
               const totalPoints = stories.reduce((sum, story) => sum + (story.story_points || 0), 0);
               const percentUsed = Math.round((totalPoints / currentSprint.velocity) * 100);
               const isOverloaded = totalPoints > currentSprint.velocity;
-              
+
               return (
                 <div className="text-end">
                   <div className={isOverloaded ? "text-danger fw-bold" : "text-success"}>
                     Load: {totalPoints} / {currentSprint.velocity} points ({percentUsed}%)
                   </div>
                   <div className="progress mt-1" style={{ height: '10px', width: '200px' }}>
-                    <div 
-                      className={`progress-bar ${isOverloaded ? 'bg-danger' : 'bg-success'}`} 
-                      role="progressbar" 
-                      style={{ width: `${Math.min(percentUsed, 100)}%` }} 
-                      aria-valuenow={percentUsed} 
-                      aria-valuemin="0" 
+                    <div
+                      className={`progress-bar ${isOverloaded ? 'bg-danger' : 'bg-success'}`}
+                      role="progressbar"
+                      style={{ width: `${Math.min(percentUsed, 100)}%` }}
+                      aria-valuenow={percentUsed}
+                      aria-valuemin="0"
                       aria-valuemax="100">
                     </div>
                   </div>
@@ -193,7 +223,7 @@ const UserStories = () => {
         </div>
       </div>
     )}
-    
+
     <div className="d-flex align-items-start mb-3">
     {currentProjectRole === 'SCRUM_MASTER' && (
       <Button
@@ -215,7 +245,9 @@ const UserStories = () => {
           expandedStoryId={expandedStoryId}
           onRemoveFromSprint={handleRemoveFromSprint}
           tasksByStoryId={tasksByStoryId}
+          projectUsers={projectUsers}
           sprint={currentSprint}
+          onTaskAdded={handleAddTask}
         />
       ))}
     </div>

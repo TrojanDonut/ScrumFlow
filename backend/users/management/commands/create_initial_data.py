@@ -125,7 +125,7 @@ class Command(BaseCommand):
                     name='Scrum Project 2',
                     defaults={ 'description': 'Desc 2', 'product_owner': product_owner_user, 'scrum_master': scrum_master_user }
                 )
-                
+
                 # Create project memberships
                 # Project 1 memberships
                 ProjectMember.objects.get_or_create(
@@ -138,7 +138,7 @@ class Command(BaseCommand):
                     user=scrum_master_user,
                     defaults={'role': ProjectMember.Role.SCRUM_MASTER}
                 )
-                
+
                 # Add developers to Project 1
                 for dev in p1_devs:
                     ProjectMember.objects.get_or_create(
@@ -149,7 +149,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(
                         f'Added {dev.username} to {project1.name} as Developer'
                     ))
-                
+
                 # Project 2 memberships
                 ProjectMember.objects.get_or_create(
                     project=project2,
@@ -161,7 +161,7 @@ class Command(BaseCommand):
                     user=scrum_master_user,
                     defaults={'role': ProjectMember.Role.SCRUM_MASTER}
                 )
-                
+
                 # Add developers to Project 2
                 for dev in p2_devs:
                     ProjectMember.objects.get_or_create(
@@ -198,7 +198,7 @@ class Command(BaseCommand):
                         )
                         Sprint.objects.bulk_create([sprint])
                         log_msg = 'created'
-                    
+
                     self.stdout.write(self.style.SUCCESS(
                         f'Sprint {log_msg} for {proj.name} ({start})'
                     ))
