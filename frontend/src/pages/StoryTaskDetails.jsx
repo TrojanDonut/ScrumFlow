@@ -4,10 +4,14 @@ import { generateTaskStatusTag } from './TaskUtils';
 import AddTaskModal from './AddTaskModal';
 import TimeTracking from './TimeTracking';
 import axios from 'axios';
+import { useSelector, useDispatch } from 'react-redux';
+import { acceptTask, assignTask, unassignTask } from '../store/slices/taskSlice';
 
 const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, onTaskAdded }) => {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [localTasks, setLocalTasks] = useState([]);
+  const dispatch = useDispatch();
+  const currentUser = useSelector((state) => state.auth.user);
   
   // Update local tasks when tasks prop changes
   useEffect(() => {
@@ -49,6 +53,37 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
     }
   };
 
+  const handleAcceptTask = (taskId) => {
+    console.log('accept task handler')
+    dispatch(acceptTask(taskId))
+      .unwrap()
+      .then((updatedTask) => {
+        console.log('Task accepted:', updatedTask);
+        // Update local tasks or refetch tasks if needed
+        setLocalTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to accept task:', error);
+      });
+  };
+
+  const handleRejectTask = (taskId) => {
+    dispatch(unassignTask(taskId))
+      .unwrap()
+      .then((updatedTask) => {
+        console.log('Task rejected:', updatedTask);
+        // Update local tasks or refetch tasks if needed
+        setLocalTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to reject task:', error);
+      });
+  };
+
   return (
     <>
     <Modal show={show} onHide={handleClose} size="lg">
@@ -69,11 +104,49 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         {localTasks.length > 0 ? (
           <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
             {localTasks.map((task) => (
-              <li key={task.id} style={{ marginBottom: '30px', padding: '15px', border: '1px solid #dee2e6', borderRadius: '5px' }}>
+              <li key={task.id} style={{ 
+                marginBottom: '30px', 
+                padding: '15px', 
+                border: task.assigned_to === currentUser.id ? '1px solid blue' : '1px solid #dee2e6', 
+                borderRadius: '5px',
+              }}>
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <div>
                     <strong>{task.title}</strong>
                     {generateTaskStatusTag(task.status)}
+                  </div>
+                  <div>
+                    {task.assigned_to === currentUser.id && (
+                      <>
+                        {task.status === "ASSIGNED" && (
+                          <Button
+                            variant="success"
+                            size="sm"
+                            className="me-2"
+                            onClick={() => handleAcceptTask(task.id)}
+                          >
+                            Accept task
+                          </Button>
+                        )}
+                        {(task.status === "IN_PROGRESS" || task.status === "ASSIGNED") && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            className="me-2"
+                            onClick={() => handleRejectTask(task.id)}
+                          >
+                            Reject task
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      // onClick={() => handleEditTask(task.id)}
+                    >
+                      Edit task
+                    </Button>
                   </div>
                 </div>
                 <div>assigned to: {getUsername(task.assigned_to)}</div>

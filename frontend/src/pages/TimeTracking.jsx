@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Table, Badge, Alert } from 'react-bootstrap';
+import { Button, Form, Table, Alert, Accordion } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 
@@ -149,84 +149,91 @@ const TimeTracking = ({ task, onTimeLogged }) => {
 
   return (
     <div className="mt-4">
-      <h5>Time Tracking</h5>
-      
-      {error && (
-        <Alert variant="danger" className="mt-2 mb-2 py-2" onClose={() => setError('')} dismissible>
-          {error}
-        </Alert>
-      )}
-      
-      {/* Time tracking controls */}
-      <div className="mb-3">
-        <Button 
-          variant={getTrackingButtonVariant()}
-          onClick={handleTrackingButton}
-          disabled={taskStatus === 'COMPLETED'}
-        >
-          {getTrackingButtonLabel()}
-        </Button>
-      </div>
+      <Accordion>
+        <Accordion.Item eventKey="0">
+          <Accordion.Header>Time Tracking</Accordion.Header>
+          <Accordion.Body>
+            <h5>Time Tracking</h5>
+            
+            {error && (
+              <Alert variant="danger" className="mt-2 mb-2 py-2" onClose={() => setError('')} dismissible>
+                {error}
+              </Alert>
+            )}
+            
+            {/* Time tracking controls */}
+            <div className="mb-3">
+              <Button 
+                variant={getTrackingButtonVariant()}
+                onClick={handleTrackingButton}
+                disabled={taskStatus === 'COMPLETED'}
+              >
+                {getTrackingButtonLabel()}
+              </Button>
+            </div>
 
-      {/* Manual time entry form - always available even when not tracking */}
-      <Form onSubmit={logManualTime} className="mb-4">
-        <Form.Group className="mb-3">
-          <Form.Label>Manual Time Entry</Form.Label>
-          <div className="d-flex gap-2">
-            <Form.Control
-              type="number"
-              placeholder="Hours"
-              value={manualHours}
-              onChange={(e) => setManualHours(e.target.value)}
-              min="0.1"
-              step="0.1"
-              required
-              style={{ maxWidth: '100px' }}
-            />
-            <Form.Control
-              type="text"
-              placeholder="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <Button 
-              type="submit" 
-              variant="primary"
-              disabled={taskStatus === 'COMPLETED'}
-            >
-              Log Time
-            </Button>
-          </div>
-          <small className="text-muted mt-1 d-block">
-            Manual time entry works even when the task is not being actively tracked.
-          </small>
-        </Form.Group>
-      </Form>
+            {/* Manual time entry form - always available even when not tracking */}
+            <Form onSubmit={logManualTime} className="mb-4">
+              <Form.Group className="mb-3">
+                <Form.Label>Manual Time Entry</Form.Label>
+                <div className="d-flex gap-2">
+                  <Form.Control
+                    type="number"
+                    placeholder="Hours"
+                    value={manualHours}
+                    onChange={(e) => setManualHours(e.target.value)}
+                    min="0.1"
+                    step="0.1"
+                    required
+                    style={{ maxWidth: '100px' }}
+                  />
+                  <Form.Control
+                    type="text"
+                    placeholder="Description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                  <Button 
+                    type="submit" 
+                    variant="primary"
+                    disabled={taskStatus === 'COMPLETED'}
+                  >
+                    Log Time
+                  </Button>
+                </div>
+                <small className="text-muted mt-1 d-block">
+                  Manual time entry works even when the task is not being actively tracked.
+                </small>
+              </Form.Group>
+            </Form>
 
-      {/* Time logs table */}
-      <h6>Time Logs</h6>
-      {timeLogs.length > 0 ? (
-        <Table striped bordered hover size="sm">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Hours</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {timeLogs.map((log) => (
-              <tr key={log.id}>
-                <td>{formatDate(log.date)}</td>
-                <td>{log.hours_spent}</td>
-                <td>{log.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <p className="text-muted">No time logs recorded yet.</p>
-      )}
+            {/* Time logs table */}
+            <h6>Time Logs</h6>
+            {timeLogs.length > 0 ? (
+              <Table striped bordered hover size="sm">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Hours</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td>{formatDate(log.date)}</td>
+                      <td>{log.hours_spent}</td>
+                      <td>{log.description}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            ) : (
+              <p className="text-muted">No time logs recorded yet.</p>
+            )}
+          </Accordion.Body>
+        </Accordion.Item>
+      </Accordion>
     </div>
   );
 };

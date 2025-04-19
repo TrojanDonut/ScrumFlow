@@ -120,6 +120,90 @@ export const addTaskToStory = createAsyncThunk(
   }
 );
 
+export const acceptTask = createAsyncThunk(
+  'tasks/acceptTask',
+  async (taskId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/tasks/${taskId}/accept/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to accept task');
+    }
+  }
+);
+
+export const assignTask = createAsyncThunk(
+  'tasks/assignTask',
+  async (taskId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/tasks/${taskId}/assign/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to assign task');
+    }
+  }
+);
+
+export const unassignTask = createAsyncThunk(
+  'tasks/unassignTask',
+  async (taskId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/tasks/${taskId}/unassign/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to unassign task');
+    }
+  }
+);
+
 export const updateTaskStatus = createAsyncThunk(
   'tasks/updateTaskStatus',
   async ({ taskId, status }, { rejectWithValue }) => {
@@ -210,6 +294,44 @@ const taskSlice = createSlice({
       .addCase(addTaskToStory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to create task';
+      })
+
+      // Assign task reducers
+      .addCase(assignTask.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(assignTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const task = action.payload;
+        const storyTasks = state.tasksByStoryId[task.story] || [];
+        const index = storyTasks.findIndex((t) => t.id === task.id);
+        if (index !== -1) {
+          storyTasks[index] = task;
+        }
+      })
+      .addCase(assignTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to assign task';
+      })
+
+      // Unassign task reducers
+      .addCase(unassignTask.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(unassignTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const task = action.payload;
+        const storyTasks = state.tasksByStoryId[task.story] || [];
+        const index = storyTasks.findIndex((t) => t.id === task.id);
+        if (index !== -1) {
+          storyTasks[index] = task;
+        }
+      })
+      .addCase(unassignTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to unassign task';
       })
 
       // Update task status reducers

@@ -49,10 +49,11 @@ const UserStoryColumn = ({
 
   var tasks = tasksByStoryId[expandedStoryId] || [];
 
-  if (userProjectRole === "DEVELOPER") {
-    // filter tasks by assigned_to
-    tasks = tasks.filter((task) => task.assigned_to === currentActiveUser.id);
-  }
+  // todo - this isn't actually neccessary
+  // if (userProjectRole === "DEVELOPER") {
+  //   // filter tasks by assigned_to
+  //   tasks = tasks.filter((task) => task.assigned_to === currentActiveUser.id);
+  // }
 
   // Render the StoryTaskDetails modal
   const renderStoryTaskDetailsModal = () => {
