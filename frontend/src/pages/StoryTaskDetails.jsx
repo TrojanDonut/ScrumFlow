@@ -3,7 +3,7 @@ import { Modal, Button } from 'react-bootstrap';
 import { generateTaskStatusTag } from './TaskUtils';
 import AddTaskModal from './AddTaskModal';
 
-const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, onTaskAdded }) => {
+const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, currentProjectRole, onTaskAdded, handleRejectStory, handleAcceptStory }) => {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   
@@ -68,6 +68,22 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
             disabled={isAddingTask}
           >
             {isAddingTask ? 'Adding Task...' : 'Add new task'}
+          </Button>
+        )}
+        {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
+          <Button 
+            variant="danger" 
+            onClick={() => handleRejectStory(story.id)}
+          >
+            Reject Story
+          </Button>
+        )}
+        {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
+          <Button 
+            variant="success" 
+            onClick={() => handleAcceptStory(story.id)}
+          >
+            Accept Story
           </Button>
         )}
         <Button variant="secondary" onClick={handleClose}>

@@ -263,6 +263,37 @@ export const returnStoriesToBacklog = createAsyncThunk(
   }
 );
 
+export const updateStoryStatus = createAsyncThunk(
+  'stories/updateStoryStatus',
+  async ({ storyId, status }, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/user-stories/${storyId}/update-status/`,
+        { status },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true,
+        }
+      );
+      console.log(`Story ${storyId} status updated to ${status}:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating story status:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || `Failed to update story status to ${status}`);
+    }
+  }
+);
+
 const initialState = {
   stories: [],
   backlogStories: {
@@ -517,6 +548,44 @@ const storySlice = createSlice({
       .addCase(returnStoriesToBacklog.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to return stories to backlog';
+      })
+      .addCase(updateStoryStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateStoryStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        
+        const updatedStory = action.payload;
+        
+        // Posodobi zgodbo v seznamu zgodb sprinta
+        const storyIndex = state.stories.findIndex(story => story.id === updatedStory.id);
+        if (storyIndex !== -1) {
+          state.stories[storyIndex] = updatedStory;
+        }
+        
+        // Če je zgodba sprejeta, jo premakni v "finished" seznam
+        if (updatedStory.status === 'ACCEPTED') {
+          // Najprej odstrani zgodbo iz vseh kategorij
+          state.backlogStories.unrealized.active = state.backlogStories.unrealized.active.filter(
+            story => story.id !== updatedStory.id
+          );
+          state.backlogStories.unrealized.unactive = state.backlogStories.unrealized.unactive.filter(
+            story => story.id !== updatedStory.id
+          );
+          
+          // Dodaj v končane zgodbe
+          if (!state.backlogStories.finished.some(story => story.id === updatedStory.id)) {
+            state.backlogStories.finished.push(updatedStory);
+          }
+        } else if (updatedStory.status === 'REJECTED') {
+          // Če je zgodba zavrnjena, jo obdrži v aktivnih zgodbah
+          // (bo kasneje ob koncu sprinta vrnjena v backlog)
+        }
+      })
+      .addCase(updateStoryStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update story status';
       });
   },
 });

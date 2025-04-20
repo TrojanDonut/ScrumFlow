@@ -17,6 +17,9 @@ const UserStoryColumn = ({
   projectUsers,
   sprint,
   onTaskAdded,
+  handleAcceptStory,
+  handleRejectStory,
+  currentProjectRole,
 }) => {
   const [showModal, setShowModal] = useState(false); // State to control modal visibility
   const [selectedStory, setSelectedStory] = useState(null); // State to store the selected story
@@ -57,8 +60,11 @@ const UserStoryColumn = ({
         story={selectedStory}
         tasks={tasksByStoryId[selectedStory.id] || []}
         users={projectUsers}
-        sprintStatus={sprintStatus}
+        sprintStatus={sprint?.is_active ? 'active' : 'inactive'}
+        currentProjectRole={currentProjectRole}
         onTaskAdded={onTaskAdded}
+        handleAcceptStory={handleAcceptStory}
+        handleRejectStory={handleRejectStory}
       />
     );
   };
