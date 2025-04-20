@@ -20,11 +20,12 @@ const UserStoryColumn = ({
   handleAcceptStory,
   handleRejectStory,
   currentProjectRole,
+  currentActiveUser,
+  userProjectRole
 }) => {
   const [showModal, setShowModal] = useState(false); // State to control modal visibility
   const [selectedStory, setSelectedStory] = useState(null); // State to store the selected story
   const dispatch = useDispatch();
-  console.log(tasksByStoryId);
 
   const handleShowDetails = (story) => {
     setSelectedStory(story);
@@ -49,6 +50,14 @@ const UserStoryColumn = ({
 
   const sprintStatus = getSprintStatus();
 
+  var tasks = tasksByStoryId[expandedStoryId] || [];
+
+  // todo - this isn't actually neccessary
+  // if (userProjectRole === "DEVELOPER") {
+  //   // filter tasks by assigned_to
+  //   tasks = tasks.filter((task) => task.assigned_to === currentActiveUser.id);
+  // }
+
   // Render the StoryTaskDetails modal
   const renderStoryTaskDetailsModal = () => {
     if (!selectedStory) return null;
@@ -58,7 +67,7 @@ const UserStoryColumn = ({
         show={showModal}
         handleClose={handleCloseModal}
         story={selectedStory}
-        tasks={tasksByStoryId[selectedStory.id] || []}
+        tasks={tasks}
         users={projectUsers}
         sprintStatus={sprint?.is_active ? 'active' : 'inactive'}
         currentProjectRole={currentProjectRole}
@@ -96,12 +105,12 @@ const UserStoryColumn = ({
                 </p>
 
                 {/* Render tasks */}
-                {tasksByStoryId[story.id] && tasksByStoryId[story.id].length > 0 ? (
+                {tasks ? (
                   <div className="mt-3">
                     <hr/>
                     <h6>Tasks:</h6>
                     <ul style={{ paddingLeft: 0, listStylePosition: 'inside' }}>
-                      {tasksByStoryId[story.id].map((task) => (
+                      {tasks.map((task) => (
                         <li key={task.id}>
                           <strong>{task.title}</strong>
                           {generateTaskStatusTag(task.status)}

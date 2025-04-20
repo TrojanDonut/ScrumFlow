@@ -354,11 +354,36 @@ class TaskUnassignView(views.APIView):
                 
         # Unassign the task
         task.assigned_to = None
+        task.status = Task.Status.UNASSIGNED
         task.save()
         
         serializer = TaskSerializer(task)
         return Response(serializer.data)
 
+class TaskAcceptView(views.APIView):
+    """
+    post:
+    Marks task as 'in progress' by current user.
+    """
+    
+    def get_permissions(self):
+        return [IsAuthenticated()]
+    
+    def post(self, request, task_id):
+        task = get_object_or_404(Task, id=task_id)
+        
+        # Check if the task is assigned to a different user
+        if task.assigned_to and task.assigned_to != request.user:
+            return Response(
+                {"error": "Task is already assigned to another user."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        task.status = Task.Status.IN_PROGRESS
+        task.save()
+        
+        serializer = TaskSerializer(task)
+        return Response(serializer.data)
 
 class TaskStartView(views.APIView):
     """
@@ -518,3 +543,20 @@ class UserTimeLogListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return TimeLog.objects.filter(user=user)
+
+
+class StartTaskSessionView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, task_id):
+        task = Task.objects.get(id=task_id)
+        task.start_session(request.user)
+        return Response({"message": "Task session started."})
+
+class StopTaskSessionView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, task_id):
+        task = Task.objects.get(id=task_id)
+        task.stop_session(request.user)
+        return Response({"message": "Task session stopped and time logged."})

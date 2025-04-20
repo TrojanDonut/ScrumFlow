@@ -35,6 +35,11 @@ urlpatterns = [
         name='task-unassign'
     ),
     path(
+        'tasks/<int:task_id>/accept/',
+        views.TaskAcceptView.as_view(),
+        name='task-accept'
+    ),
+    path(
         'tasks/<int:task_id>/start/',
         views.TaskStartView.as_view(),
         name='task-start'
@@ -59,4 +64,6 @@ urlpatterns = [
         views.UserTimeLogListView.as_view(),
         name='user-timelogs'
     ),
+    path('tasks/<int:task_id>/start-session/', views.StartTaskSessionView.as_view(), name='start-task-session'),
+    path('tasks/<int:task_id>/stop-session/', views.StopTaskSessionView.as_view(), name='stop-task-session'),
 ]

@@ -1,33 +1,34 @@
-import React, { useState } from 'react';
-import { Modal, Button } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Modal, Button, Badge } from 'react-bootstrap';
 import { generateTaskStatusTag } from './TaskUtils';
 import AddTaskModal from './AddTaskModal';
+import TimeTracking from './TimeTracking';
+import axios from 'axios';
+import { useSelector, useDispatch } from 'react-redux';
+import { acceptTask, assignTask, unassignTask } from '../store/slices/taskSlice';
 
 const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, currentProjectRole, onTaskAdded, handleRejectStory, handleAcceptStory }) => {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
-  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [localTasks, setLocalTasks] = useState([]);
+  const dispatch = useDispatch();
+  const currentUser = useSelector((state) => state.auth.user);
   
-  // get usernames for assigned tasks
+  // Update local tasks when tasks prop changes
+  useEffect(() => {
+    if (tasks) {
+      setLocalTasks([...tasks]);
+    }
+  }, [tasks]);
+  
+  // Get usernames for assigned tasks
   const getUsername = (id) => {
     const user = users.find((user) => user.user.id === id);
     return user ? user.user.username : 'nobody';
   };
 
-  const handleTaskAdded = async (storyId, taskData) => {
-    setIsAddingTask(true);
-    try {
-      await onTaskAdded(storyId, taskData);
-      setShowAddTaskModal(false);
-    } catch (error) {
-      console.error('Failed to add task:', error);
-    } finally {
-      setIsAddingTask(false);
-    }
-  };
-
   return (
     <>
-    <Modal show={show} onHide={handleClose}>
+    <Modal show={show} onHide={handleClose} size="lg">
       <Modal.Header closeButton>
         <Modal.Title>
           <h3>{story.name}</h3>
@@ -42,17 +43,61 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         <p>{story.acceptance_tests}</p>
         <hr />
         <h4>Tasks:</h4>
-        {tasks.length > 0 ? (
-          <ul>
-            {tasks.map((task) => (
-              <li key={task.id} style={{ marginBottom: '15px' }}>
-                <div>
-                  <strong>{task.title}</strong>
-                  {generateTaskStatusTag(task.status)}
+        {localTasks.length > 0 ? (
+          <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+            {localTasks.map((task) => (
+              <li key={task.id} style={{ 
+                marginBottom: '30px', 
+                padding: '15px', 
+                border: task.assigned_to === currentUser.id ? '1px solid blue' : '1px solid #dee2e6', 
+                borderRadius: '5px',
+              }}>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <div>
+                    <strong>{task.title}</strong>
+                    {generateTaskStatusTag(task.status)}
+                  </div>
+                  <div>
+                    {task.assigned_to === currentUser.id && (
+                      <>
+                        {task.status === "ASSIGNED" && (
+                          <Button
+                            variant="success"
+                            size="sm"
+                            className="me-2"
+                            onClick={() => handleAcceptTask(task.id)}
+                          >
+                            Accept task
+                          </Button>
+                        )}
+                        {(task.status === "IN_PROGRESS" || task.status === "ASSIGNED") && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            className="me-2"
+                            onClick={() => handleRejectTask(task.id)}
+                          >
+                            Reject task
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      // onClick={() => handleEditTask(task.id)}
+                    >
+                      Edit task
+                    </Button>
+                  </div>
                 </div>
                 <div>assigned to: {getUsername(task.assigned_to)}</div>
                 <div>estimated time: {Math.round(task.estimated_hours)}h</div>
                 <div>{task.description}</div>
+                <TimeTracking 
+                  task={task} 
+                  onTimeLogged={() => handleTimeLogged(task.id)} 
+                />
               </li>
             ))}
           </ul>
@@ -61,29 +106,9 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         )}
       </Modal.Body>
       <Modal.Footer>
-        {story.status !== 'DONE' && sprintStatus === 'active' && (
-          <Button 
-            variant="outline-primary" 
-            onClick={() => setShowAddTaskModal(true)}
-            disabled={isAddingTask}
-          >
-            {isAddingTask ? 'Adding Task...' : 'Add new task'}
-          </Button>
-        )}
-        {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
-          <Button 
-            variant="danger" 
-            onClick={() => handleRejectStory(story.id)}
-          >
-            Reject Story
-          </Button>
-        )}
-        {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
-          <Button 
-            variant="success" 
-            onClick={() => handleAcceptStory(story.id)}
-          >
-            Accept Story
+        {story.status !== 'DONE' && sprintStatus === 'active' && (  // todo - also check if the sprint is active
+          <Button variant="outline-primary" onClick={() => setShowAddTaskModal(true)}>
+              Add new task
           </Button>
         )}
         <Button variant="secondary" onClick={handleClose}>
@@ -98,7 +123,10 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       handleClose={() => setShowAddTaskModal(false)}
       storyId={story.id}
       users={users}
-      onTaskAdded={handleTaskAdded}
+      onTaskAdded={(storyId, taskData) => {
+        onTaskAdded(storyId, taskData);
+        handleClose();
+      }}
     />
     </>
   );
