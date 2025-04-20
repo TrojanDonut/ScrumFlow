@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Badge } from 'react-bootstrap';
+import { Modal, Button } from 'react-bootstrap';
 import { generateTaskStatusTag } from './TaskUtils';
 import AddTaskModal from './AddTaskModal';
 import TimeTracking from './TimeTracking';
@@ -57,12 +57,10 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
   };
 
   const handleAcceptTask = (taskId) => {
-    console.log('accept task handler')
     dispatch(acceptTask(taskId))
       .unwrap()
       .then((updatedTask) => {
         console.log('Task accepted:', updatedTask);
-        // Update local tasks or refetch tasks if needed
         setLocalTasks((prevTasks) =>
           prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
         );
@@ -77,7 +75,6 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       .unwrap()
       .then((updatedTask) => {
         console.log('Task rejected:', updatedTask);
-        // Update local tasks or refetch tasks if needed
         setLocalTasks((prevTasks) =>
           prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
         );

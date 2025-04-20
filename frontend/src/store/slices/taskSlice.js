@@ -388,6 +388,25 @@ const taskSlice = createSlice({
         state.error = action.payload || 'Failed to unassign task';
       })
 
+      // Accept task reducers
+      .addCase(acceptTask.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(acceptTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const task = action.payload;
+        const storyTasks = state.tasksByStoryId[task.story] || [];
+        const index = storyTasks.findIndex((t) => t.id === task.id);
+        if (index !== -1) {
+          storyTasks[index] = task;
+        }
+      })
+      .addCase(acceptTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to accept task';
+      })
+
       // Update task status reducers
       .addCase(updateTaskStatus.pending, (state) => {
         state.loading = true;
@@ -424,7 +443,7 @@ const taskSlice = createSlice({
         state.error = action.payload || 'Failed to update task';
       })
 
-      // Handle delete task reducers
+      // Delete task reducers
       .addCase(deleteTask.pending, (state) => {
         state.loading = true;
         state.error = null;
