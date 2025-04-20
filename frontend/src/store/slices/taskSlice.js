@@ -216,6 +216,60 @@ export const updateTaskStatus = createAsyncThunk(
   }
 );
 
+export const updateTask = createAsyncThunk(
+  'tasks/updateTask',
+  async ({ taskId, taskData }, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.patch(
+        `${API_URL}/tasks/${taskId}/`,
+        taskData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to update task');
+    }
+  }
+);
+
+export const deleteTask = createAsyncThunk(
+  'tasks/deleteTask',
+  async (taskId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      await axios.delete(`${API_URL}/tasks/${taskId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+
+      return taskId;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to delete task');
+    }
+  }
+);
+
 const taskSlice = createSlice({
   name: 'tasks',
   initialState: {
@@ -349,6 +403,44 @@ const taskSlice = createSlice({
       .addCase(updateTaskStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to update task status';
+      })
+
+      // Update task reducers
+      .addCase(updateTask.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedTask = action.payload;
+        const storyTasks = state.tasksByStoryId[updatedTask.story] || [];
+        const index = storyTasks.findIndex((task) => task.id === updatedTask.id);
+        if (index !== -1) {
+          storyTasks[index] = updatedTask;
+        }
+      })
+      .addCase(updateTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update task';
+      })
+
+      // Handle delete task reducers
+      .addCase(deleteTask.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const taskId = action.payload;
+        for (const storyId in state.tasksByStoryId) {
+          state.tasksByStoryId[storyId] = state.tasksByStoryId[storyId].filter(
+            (task) => task.id !== taskId
+          );
+        }
+      })
+      .addCase(deleteTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to delete task';
       });
   },
 });

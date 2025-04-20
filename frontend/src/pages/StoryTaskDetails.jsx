@@ -5,9 +5,12 @@ import AddTaskModal from './AddTaskModal';
 import TimeTracking from './TimeTracking';
 import axios from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
-import { acceptTask, assignTask, unassignTask } from '../store/slices/taskSlice';
+import { acceptTask, unassignTask } from '../store/slices/taskSlice';
+import EditTaskModal from './EditTaskModal';
 
 const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, onTaskAdded }) => {
+  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [localTasks, setLocalTasks] = useState([]);
   const dispatch = useDispatch();
@@ -84,6 +87,36 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       });
   };
 
+  const handleEditTask = (task) => {
+    setSelectedTask(task);
+    setShowEditTaskModal(true);
+  };
+
+  const handleTaskUpdated = (updatedTask) => {
+    setLocalTasks((prevTasks) =>
+      prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+    );
+  };
+
+  const handleTaskDeleted = (taskId) => {
+    setLocalTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+  };
+
+  const renderEditTaskModal = () => {
+    if (!selectedTask) return null;
+
+    return (
+      <EditTaskModal
+        show={showEditTaskModal}
+        handleClose={() => setShowEditTaskModal(false)}
+        task={selectedTask}
+        users={users}
+        onTaskUpdated={handleTaskUpdated}
+        onTaskDeleted={handleTaskDeleted}
+      />
+    );
+  };
+
   return (
     <>
     <Modal show={show} onHide={handleClose} size="lg">
@@ -143,7 +176,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                     <Button
                       variant="warning"
                       size="sm"
-                      // onClick={() => handleEditTask(task.id)}
+                      onClick={() => handleEditTask(task)}
                     >
                       Edit task
                     </Button>
@@ -174,6 +207,9 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         </Button>
       </Modal.Footer>
     </Modal>
+    
+    {/* Edit Task Modal */}
+    {renderEditTaskModal()}
 
     {/* Add Task Modal */}
     <AddTaskModal
