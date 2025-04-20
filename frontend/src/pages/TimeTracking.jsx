@@ -111,9 +111,9 @@ const TimeTracking = ({ task, onTimeLogged }) => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Only show time tracking controls if user is assigned to the task
+  // Only show time tracking controls if user is assigned to the task and the task is active
   const isAssignedToMe = task.assigned_to === currentUser?.id;
-  if (!isAssignedToMe) {
+  if (!isAssignedToMe || task.status !== 'IN_PROGRESS') {
     return null;
   }
 

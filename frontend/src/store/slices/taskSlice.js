@@ -204,6 +204,34 @@ export const unassignTask = createAsyncThunk(
   }
 );
 
+export const completeTask = createAsyncThunk(
+  'tasks/completeTask',
+  async (taskId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/tasks/${taskId}/complete/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to complete task');
+    }
+  }
+);
+
 export const updateTaskStatus = createAsyncThunk(
   'tasks/updateTaskStatus',
   async ({ taskId, status }, { rejectWithValue }) => {
@@ -405,6 +433,25 @@ const taskSlice = createSlice({
       .addCase(acceptTask.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to accept task';
+      })
+
+      // Complete task reducers
+      .addCase(completeTask.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(completeTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const task = action.payload;
+        const storyTasks = state.tasksByStoryId[task.story] || [];
+        const index = storyTasks.findIndex((t) => t.id === task.id);
+        if (index !== -1) {
+          storyTasks[index] = task;
+        }
+      })
+      .addCase(completeTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to complete task';
       })
 
       // Update task status reducers

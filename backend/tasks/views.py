@@ -480,7 +480,8 @@ class TaskCompleteView(views.APIView):
                 description=request.data.get('description', 'Task completed')
             )
         
-        return Response({"message": "Task marked as complete."})
+        serializer = TaskSerializer(task)
+        return Response(serializer.data)
 
 
 class TimeLogListView(generics.ListAPIView):

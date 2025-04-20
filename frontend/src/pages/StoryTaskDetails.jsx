@@ -5,7 +5,7 @@ import AddTaskModal from './AddTaskModal';
 import TimeTracking from './TimeTracking';
 import axios from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
-import { acceptTask, unassignTask } from '../store/slices/taskSlice';
+import { acceptTask, completeTask, unassignTask } from '../store/slices/taskSlice';
 import EditTaskModal from './EditTaskModal';
 
 const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, onTaskAdded }) => {
@@ -81,6 +81,20 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       })
       .catch((error) => {
         console.error('Failed to reject task:', error);
+      });
+  };
+
+  const handleCompleteTask = (taskId) => {
+    dispatch(completeTask(taskId))
+      .unwrap()
+      .then((completedTask) => {
+        console.log('Task completed:', completedTask);
+        setLocalTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === completedTask.id ? completedTask : task))
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to complete task:', error);
       });
   };
 
@@ -166,6 +180,16 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                             onClick={() => handleRejectTask(task.id)}
                           >
                             Reject task
+                          </Button>
+                        )}
+                        {(task.status === "IN_PROGRESS") && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="me-2"
+                            onClick={() => handleCompleteTask(task.id)}
+                          >
+                            Task completed
                           </Button>
                         )}
                       </>
