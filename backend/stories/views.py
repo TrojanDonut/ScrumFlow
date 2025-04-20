@@ -11,7 +11,8 @@ from users.permissions import (
     IsProductOwnerOrScrumMaster, 
     IsScrumMaster,
     IsProjectMemberFromSprint,
-    IsScrumMasterFromSprint
+    IsScrumMasterFromSprint,
+    IsProductOwner
 )
 from projects.models import ProjectMember
 
@@ -466,5 +467,65 @@ class MarkStoryAsRealizedView(APIView):
             logger.error(f"Error marking story {story_id} as realized: {e}")
             return Response(
                 {"error": f"Failed to mark story as realized: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class ReturnStoriesToBacklogView(APIView):
+    """API view for returning incomplete stories from a sprint back to the backlog."""
+    
+    def get_permissions(self):
+        """Only Product Owner can return stories to backlog at the end of a sprint"""
+        return [IsAuthenticated(), IsProductOwner()]
+    
+    def post(self, request, project_id, sprint_id, *args, **kwargs):
+        try:
+            # Get the sprint
+            from sprints.models import Sprint
+            sprint = get_object_or_404(Sprint, id=sprint_id, project_id=project_id)
+            
+            # Check if sprint is completed
+            if not sprint.is_completed:
+                return Response(
+                    {"error": "Cannot return stories to backlog. Sprint is not completed yet."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get stories to return (NOT_STARTED, IN_PROGRESS, REJECTED, DONE)
+            stories_to_return = UserStory.objects.filter(
+                sprint=sprint,
+                is_deleted=False,
+                status__in=[
+                    UserStory.Status.NOT_STARTED,
+                    UserStory.Status.IN_PROGRESS,
+                    UserStory.Status.REJECTED,
+                    UserStory.Status.DONE  # DONE but not ACCEPTED
+                ]
+            )
+            
+            count = stories_to_return.count()
+            
+            # Return stories to backlog
+            for story in stories_to_return:
+                story.sprint = None
+                story.save()
+            
+            return Response(
+                {
+                    "message": f"Successfully returned {count} incomplete stories to the backlog.",
+                    "stories_count": count
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Sprint.DoesNotExist:
+            return Response(
+                {"error": "Sprint not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error returning stories to backlog for sprint {sprint_id}: {e}")
+            return Response(
+                {"error": f"Failed to return stories to backlog: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

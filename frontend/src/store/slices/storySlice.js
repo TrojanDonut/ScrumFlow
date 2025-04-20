@@ -230,6 +230,39 @@ export const addStoryToSprint = createAsyncThunk(
   }
 );
 
+export const returnStoriesToBacklog = createAsyncThunk(
+  'stories/returnStoriesToBacklog',
+  async ({ projectId, sprintId }, { rejectWithValue, getState }) => {
+    try {
+      console.log(`Returning incomplete stories from sprint ${sprintId} to backlog`);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/projects/${projectId}/sprints/${sprintId}/return-stories/`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true,
+        }
+      );
+      
+      console.log('Stories returned to backlog successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error returning stories to backlog:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || 'Failed to return stories to backlog');
+    }
+  }
+);
+
 const initialState = {
   stories: [],
   backlogStories: {
@@ -459,9 +492,34 @@ const storySlice = createSlice({
       .addCase(addStoryToSprint.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to add story to sprint';
+      })
+      .addCase(returnStoriesToBacklog.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(returnStoriesToBacklog.fulfilled, (state, action) => {
+        state.loading = false;
+        console.log('Stories returned to backlog:', action.payload);
+        
+        // Ne posodabljamo celotne strukture backlogStories,
+        // ker API ne vrača nove strukture, ampak samo podatke o uspehu operacije
+        
+        // Lahko dodamo komentar o uspehu operacije
+        state.lastAction = {
+          type: 'RETURN_TO_BACKLOG',
+          message: `Successfully returned ${action.payload.stories_count} stories to backlog`,
+          timestamp: new Date().toISOString()
+        };
+        
+        // Ne spreminjamo `state.stories`, ker moramo podatke pridobiti na novo
+        // s fetchBacklogStories, kar je že implementirano v handleReturnStoriesToBacklog
+      })
+      .addCase(returnStoriesToBacklog.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to return stories to backlog';
       });
   },
 });
 
 export const { clearStoryError, resetBacklogStories } = storySlice.actions;
-export default storySlice.reducer; 
+export default storySlice.reducer;

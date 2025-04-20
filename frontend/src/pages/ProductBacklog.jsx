@@ -17,23 +17,29 @@ import {
   Modal,
   Form
 } from 'react-bootstrap';
-import { fetchBacklogStories, fetchStories, resetBacklogStories, updateStory } from '../store/slices/storySlice';
+import { fetchBacklogStories, fetchStories, resetBacklogStories, updateStory, returnStoriesToBacklog } from '../store/slices/storySlice';
 import { fetchProjectById } from '../store/slices/projectSlice';
+import { fetchCompletedSprints } from '../store/slices/sprintSlice';
 import AddUserStory from './AddUserStory';
 import { deleteStory } from '../store/slices/storySlice';
+import axios from 'axios';
 
 const ProductBacklog = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { backlogStories, loading, error } = useSelector(state => state.stories);
   const { currentProject } = useSelector(state => state.projects);
-  const { currentProjectRole } = useSelector(state => state.auth);
+  const { currentProjectRole, auth } = useSelector(state => state.auth);
+  const { completedSprints } = useSelector(state => state.sprints);
   const [showModal, setShowModal] = useState(false);
   const [selectedStory, setSelectedStory] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showSizeModal, setShowSizeModal] = useState(false);
   const [newStoryPoints, setNewStoryPoints] = useState('');
   const [storyToEstimate, setStoryToEstimate] = useState(null);
+  const [errorMessage, setError] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
+  const [returnError, setReturnError] = useState(null);
 
   useEffect(() => {
     if (id) {
@@ -47,6 +53,15 @@ const ProductBacklog = () => {
       dispatch(resetBacklogStories());
     };
   }, [dispatch, id]);
+
+  useEffect(() => {
+    const isAuthenticated = auth && auth.token;
+    const isProductOwner = currentProjectRole === "PRODUCT_OWNER";
+    
+    if (id && isAuthenticated && isProductOwner) {
+      dispatch(fetchCompletedSprints(id));
+    }
+  }, [id, auth, currentProjectRole, dispatch]);
 
   const handleUserStoryAdded = () => {
     if (id) {
@@ -112,6 +127,31 @@ const ProductBacklog = () => {
     }
   };
 
+  const handleReturnStoriesToBacklog = async (sprintId) => {
+    try {
+      // Show confirmation dialog
+      if (!window.confirm(
+        "This will return all incomplete stories from this sprint back to the product backlog. Continue?"
+      )) {
+        return; // User cancelled
+      }
+      
+      const result = await dispatch(returnStoriesToBacklog({
+        projectId: id,
+        sprintId
+      })).unwrap();
+      
+      // Reload backlog stories
+      dispatch(fetchBacklogStories(id));
+      
+      // Show success notification
+      alert(`${result.stories_count} stories were returned to the product backlog.`);
+    } catch (err) {
+      console.error('Failed to return stories to backlog:', err);
+      setReturnError('Failed to return stories to backlog: ' + (err.message || 'Unknown error'));
+    }
+  };
+
   const getPriorityBadgeVariant = (priority) => {
     switch (priority) {
       case 'MUST_HAVE':
@@ -136,15 +176,15 @@ const ProductBacklog = () => {
 
   // Add a better error message display
   const renderError = () => {
-    if (!error) return null;
-    
+    if (!fetchError) return null;
+
     let errorMessage = '';
-    if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (error.detail) {
-      errorMessage = error.detail;
-    } else if (error.message) {
-      errorMessage = error.message;
+    if (typeof fetchError === 'string') {
+      errorMessage = fetchError;
+    } else if (fetchError.detail) {
+      errorMessage = fetchError.detail;
+    } else if (fetchError.message) {
+      errorMessage = fetchError.message;
     } else {
       errorMessage = 'An error occurred while fetching the backlog stories.';
     }
@@ -461,6 +501,46 @@ const ProductBacklog = () => {
               </Tab.Pane>
             </Tab.Content>
           </Tab.Container>
+
+          {currentProjectRole === "PRODUCT_OWNER" && completedSprints.length > 0 && (
+            <div className="mt-4">
+              <h3>Completed Sprints</h3>
+              <p className="text-muted">
+                As a Product Owner, you can return incomplete stories from completed sprints back to the backlog.
+              </p>
+              
+              {error && (
+                <Alert variant="danger" onClose={() => setError(null)} dismissible>
+                  {error}
+                </Alert>
+              )}
+              
+              {returnError && (
+                <Alert variant="danger" onClose={() => setReturnError(null)} dismissible>
+                  {returnError}
+                </Alert>
+              )}
+              
+              <ListGroup className="mt-3">
+                {completedSprints.map(sprint => (
+                  <ListGroup.Item key={sprint.id} className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h5>Sprint: {sprint.name || `Sprint ${sprint.id}`}</h5>
+                      <small>
+                        {sprint.start_date} - {sprint.end_date}
+                      </small>
+                    </div>
+                    <Button 
+                      variant="warning" 
+                      onClick={() => handleReturnStoriesToBacklog(sprint.id)}
+                    >
+                      Return Incomplete Stories
+                    </Button>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </div>
+          )}
         </div>
       )}
 
