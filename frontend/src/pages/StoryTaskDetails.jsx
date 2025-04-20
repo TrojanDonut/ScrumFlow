@@ -26,6 +26,50 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
     return user ? user.user.username : 'nobody';
   };
 
+  // Handler for accepting a task
+  const handleAcceptTask = async (taskId) => {
+    try {
+      const result = await dispatch(acceptTask(taskId)).unwrap();
+      
+      // Update the task in localTasks
+      setLocalTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId ? { ...task, status: 'IN_PROGRESS' } : task
+        )
+      );
+    } catch (err) {
+      console.error('Failed to accept task:', err);
+    }
+  };
+
+  // Handler for rejecting a task
+  const handleRejectTask = async (taskId) => {
+    try {
+      const result = await dispatch(unassignTask(taskId)).unwrap();
+      
+      // Update the task in localTasks
+      setLocalTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId ? { ...task, status: 'UNASSIGNED', assigned_to: null } : task
+        )
+      );
+    } catch (err) {
+      console.error('Failed to reject task:', err);
+    }
+  };
+
+  // Handler for when time is logged
+  const handleTimeLogged = (taskId) => {
+    // Refresh the task data after time logging
+    const updatedTasks = [...localTasks];
+    setLocalTasks(updatedTasks);
+    
+    // Call the parent component's refresh method if provided
+    if (onTaskAdded) {
+      onTaskAdded(story.id, { refresh: true });
+    }
+  };
+
   return (
     <>
     <Modal show={show} onHide={handleClose} size="lg">
@@ -85,7 +129,6 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                     <Button
                       variant="warning"
                       size="sm"
-                      // onClick={() => handleEditTask(task.id)}
                     >
                       Edit task
                     </Button>
@@ -106,7 +149,30 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         )}
       </Modal.Body>
       <Modal.Footer>
-        {story.status !== 'DONE' && sprintStatus === 'active' && (  // todo - also check if the sprint is active
+        {/* Dodaj gumbe za sprejem/zavrnitev zgodbe za Product Ownerja */}
+        {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
+          <>
+            <Button 
+              variant="success" 
+              onClick={() => {
+                handleAcceptStory(story.id);
+                handleClose();
+              }}
+            >
+              Accept Story
+            </Button>
+            <Button 
+              variant="danger" 
+              onClick={() => {
+                handleRejectStory(story.id);
+                handleClose();
+              }}
+            >
+              Reject Story
+            </Button>
+          </>
+        )}
+        {story.status !== 'DONE' && sprintStatus === 'active' && (
           <Button variant="outline-primary" onClick={() => setShowAddTaskModal(true)}>
               Add new task
           </Button>
