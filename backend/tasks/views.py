@@ -196,48 +196,14 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TaskSerializer
     
     def get_permissions(self):
-        """
-        Get permissions based on the request method:
-        - Retrieve: Any authenticated project member can view task details
-        - Update: Only Scrum Master and task assignee can update tasks
-        - Delete: Only Scrum Master can delete tasks
-        """
-        if self.request.method == 'GET':
-            return [IsAuthenticated(), IsTaskProjectMember()]
-        elif self.request.method == 'DELETE':
-            return [IsAuthenticated(), IsTaskScrumMaster()]
-        else:  # PUT, PATCH
-            # Using a custom permission check in get_object()
-            return [IsAuthenticated()]
+        """Any authenticated project member can view, update and delete tasks (#15)"""
+        return [IsAuthenticated(), IsTaskProjectMember()]
 
     def get_queryset(self):
         return Task.objects.all()
     
     def get_object(self):
         obj = super().get_object()
-        
-        # For PUT/PATCH, check if user is task assignee or Scrum Master
-        if self.request.method in ['PUT', 'PATCH']:
-            # Get project ID from the task's story
-            story = obj.story
-            project_id = story.project.id if story.project else story.sprint.project.id
-            
-            # Check if user is Scrum Master
-            is_scrum_master = ProjectMember.objects.filter(
-                project_id=project_id,
-                user=self.request.user,
-                role=ProjectMember.Role.SCRUM_MASTER
-            ).exists()
-            
-            # Check if user is the assignee
-            is_assignee = obj.assigned_to == self.request.user
-            
-            if not (is_scrum_master or is_assignee):
-                self.permission_denied(
-                    self.request,
-                    message="You must be the Scrum Master or the task assignee to update this task."
-                )
-                
         return obj
 
 
@@ -314,6 +280,7 @@ class TaskAssignView(views.APIView):
             )
             
         task.assigned_to = request.user
+        task.status = Task.Status.ASSIGNED
         task.save()
         
         serializer = TaskSerializer(task)
@@ -354,11 +321,36 @@ class TaskUnassignView(views.APIView):
                 
         # Unassign the task
         task.assigned_to = None
+        task.status = Task.Status.UNASSIGNED
         task.save()
         
         serializer = TaskSerializer(task)
         return Response(serializer.data)
 
+class TaskAcceptView(views.APIView):
+    """
+    post:
+    Marks task as 'in progress' by current user.
+    """
+    
+    def get_permissions(self):
+        return [IsAuthenticated()]
+    
+    def post(self, request, task_id):
+        task = get_object_or_404(Task, id=task_id)
+        
+        # Check if the task is assigned to a different user
+        if task.assigned_to and task.assigned_to != request.user:
+            return Response(
+                {"error": "Task is already assigned to another user."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        task.status = Task.Status.IN_PROGRESS
+        task.save()
+        
+        serializer = TaskSerializer(task)
+        return Response(serializer.data)
 
 class TaskStartView(views.APIView):
     """
@@ -437,9 +429,8 @@ class TaskStopView(views.APIView):
                 description=request.data.get('description', '')
             )
             
-        return Response({
-            "message": "Stopped working on task."
-        })
+        serializer = TaskSerializer(task)
+        return Response(serializer.data)
 
 
 class TaskCompleteView(views.APIView):
@@ -488,7 +479,8 @@ class TaskCompleteView(views.APIView):
                 description=request.data.get('description', 'Task completed')
             )
         
-        return Response({"message": "Task marked as complete."})
+        serializer = TaskSerializer(task)
+        return Response(serializer.data)
 
 
 class TimeLogListView(generics.ListAPIView):
@@ -518,3 +510,20 @@ class UserTimeLogListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return TimeLog.objects.filter(user=user)
+
+
+class StartTaskSessionView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, task_id):
+        task = Task.objects.get(id=task_id)
+        task.start_session(request.user)
+        return Response({"message": "Task session started."})
+
+class StopTaskSessionView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, task_id):
+        task = Task.objects.get(id=task_id)
+        task.stop_session(request.user)
+        return Response({"message": "Task session stopped and time logged."})

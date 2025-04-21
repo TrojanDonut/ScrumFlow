@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from stories.models import UserStory
+from django.utils import timezone
 
 
 class Task(models.Model):
@@ -58,6 +59,20 @@ class Task(models.Model):
             self.remaining_hours = self.estimated_hours
         super().save(*args, **kwargs)
 
+    def start_session(self, user):
+        """Start a new session for the task"""
+        TaskSession.objects.create(task=self, user=user, start_time=timezone.now())
+
+    def stop_session(self, user):
+        """Stop the current session and log the time"""
+        session = TaskSession.objects.filter(task=self, user=user, end_time__isnull=True).first()
+        if session:
+            session.end_time = timezone.now()
+            session.save()
+            # Log the time spent
+            hours = session.duration()
+            TimeLog.log_time(task=self, user=user, hours=hours, description="Auto-logged from session")
+
 
 class TimeLog(models.Model):
     """TimeLog model for recording time spent on tasks"""
@@ -78,3 +93,30 @@ class TimeLog(models.Model):
 
     def __str__(self):
         return f"{self.user.username} logged {self.hours_spent} hours on {self.date}"
+    
+    @classmethod
+    def log_time(cls, task, user, hours, description=""):
+        """Create a TimeLog entry"""
+        cls.objects.create(
+            task=task,
+            user=user,
+            hours_spent=hours,
+            date=timezone.now().date(),
+            description=description
+        )
+
+
+
+class TaskSession(models.Model):
+    """TaskSession model for tracking time spent on tasks"""
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='task_sessions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='task_sessions')
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    def duration(self):
+        """Calculate the duration of the session in hours"""
+        if self.end_time:
+            delta = self.end_time - self.start_time
+            return delta.total_seconds() / 3600  # Convert seconds to hours
+        return 0

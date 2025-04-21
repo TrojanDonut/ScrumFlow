@@ -26,7 +26,7 @@ const UserStories = () => {
   const { loading, error: sprintError, currentSprint } = useSelector((state) => state.sprints);
   const { tasksByStoryId } = useSelector((state) => state.tasks);
   const { projectUsers } = useSelector((state) => state.tasks);
-  const { currentProjectRole } = useSelector(state => state.auth);
+  const { currentProjectRole, user } = useSelector(state => state.auth);
 
   useEffect(() => {
     console.log('UserStories useEffect running with projectId:', projectId, 'sprintId:', sprintId);
@@ -248,6 +248,8 @@ const UserStories = () => {
           projectUsers={projectUsers}
           sprint={currentSprint}
           onTaskAdded={handleAddTask}
+          currentActiveUser={user}
+          userProjectRole={currentProjectRole}
         />
       ))}
     </div>

@@ -359,13 +359,13 @@ class Command(BaseCommand):
                         {'title': 'P1 Task Form', 'desc': 'Form', 'hours': 8.0,
                          'status': 'IN_PROGRESS', 'assignee': p1_dev1},
                         {'title': 'P1 Task List', 'desc': 'List', 'hours': 5.0,
-                         'status': 'UNASSIGNED', 'assignee': p1_dev2},
+                         'status': 'ASSIGNED', 'assignee': p1_dev2},
                     ],
                     'SprintPlan (P1)': [
                         {'title': 'P1 Sprint Logic', 'desc': 'BE', 'hours': 6.0,
-                         'status': 'UNASSIGNED', 'assignee': p1_dev2},
+                         'status': 'ASSIGNED', 'assignee': p2_dev2},
                         {'title': 'P1 Sprint UI', 'desc': 'UI', 'hours': 4.0,
-                         'status': 'UNASSIGNED', 'assignee': p1_dev2},
+                         'status': 'ASSIGNED', 'assignee': p2_dev2},
                     ],
                     'Profile (P1)': [
                         {'title': 'P1 Profile Form', 'desc': 'UI', 'hours': 4.0,

@@ -34,6 +34,35 @@ const ProductBacklog = () => {
   const [showSizeModal, setShowSizeModal] = useState(false);
   const [newStoryPoints, setNewStoryPoints] = useState('');
   const [storyToEstimate, setStoryToEstimate] = useState(null);
+  const [activeTab, setActiveTab] = useState('unrealized');
+  // Add these state variables at the top of the component
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [storyToUpdateStatus, setStoryToUpdateStatus] = useState(null);
+  const [newStatus, setNewStatus] = useState('');
+
+  // Handler to open the status update modal
+  const handleOpenStatusModal = (story) => {
+    setStoryToUpdateStatus(story);
+    setNewStatus(story.status || '');
+    setShowStatusModal(true);
+  };
+
+  // Handler to submit the status update
+  const handleStatusUpdateSubmit = async () => {
+    if (!storyToUpdateStatus) return;
+
+    try {
+      await dispatch(updateStory({
+        storyId: storyToUpdateStatus.id,
+        storyData: { ...storyToUpdateStatus, status: newStatus }
+      })).unwrap();
+
+      dispatch(fetchBacklogStories(id));
+      setShowStatusModal(false);
+    } catch (err) {
+      console.error('Failed to update story status:', err);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -238,16 +267,17 @@ const ProductBacklog = () => {
                           >
                             Remove
                           </Button>
-                          <Button 
-                            variant="outline-primary" 
+                      </>
+                    )}
+                    {activeTab === 'unrealized' && story.sprint && currentProjectRole === "SCRUM_MASTER" && (
+                        <Button 
+                          variant="outline-secondary" 
                             size="sm" 
                             className="me-2"
-                            as={Link} 
-                            to={`/projects/${id}/user-stories/${story.id}`}
+                            onClick={() => handleOpenStatusModal(story)}
                           >
-                            Details
-                          </Button>
-                      </>
+                            Update Status
+                        </Button>
                     )}
                   </div>
                 </ListGroup.Item>
@@ -281,6 +311,7 @@ const ProductBacklog = () => {
                      backlogStories.unrealized?.unactive?.length > 0);
 
   return (
+    <>
     <Container>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -313,7 +344,7 @@ const ProductBacklog = () => {
             </Card.Body>
           </Card>
 
-          <Tab.Container id="backlog-tabs" defaultActiveKey="unrealized">
+          <Tab.Container id="backlog-tabs" defaultActiveKey="unrealized" onSelect={(key) => setActiveTab(key)}>
             <Nav variant="tabs" className="mb-3">
               <Nav.Item>
                 <Nav.Link eventKey="unrealized">Unrealized Stories</Nav.Link>
@@ -531,6 +562,47 @@ const ProductBacklog = () => {
         </Modal.Footer>
       </Modal>
     </Container>
+
+  <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)}>
+    <Modal.Header closeButton>
+      <Modal.Title>Update Story Status</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+    {console.log('Rendering status modal with story:', storyToUpdateStatus)}
+      {storyToUpdateStatus && (
+        <>
+          <p><strong>Story:</strong> {storyToUpdateStatus.name}</p>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Status</Form.Label>
+              <Form.Select 
+                value={newStatus} 
+                onChange={e => setNewStatus(e.target.value)}
+              >
+                <option value="">Select a status</option>
+                <option value="NOT_STARTED">Not started</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="DONE">Done</option>
+              </Form.Select>
+            </Form.Group>
+          </Form>
+        </>
+      )}
+    </Modal.Body>
+    <Modal.Footer>
+      <Button variant="secondary" onClick={() => setShowStatusModal(false)}>
+        Cancel
+      </Button>
+      <Button 
+        variant="primary" 
+        onClick={handleStatusUpdateSubmit}
+        disabled={!newStatus}
+      >
+        Save Changes
+      </Button>
+    </Modal.Footer>
+  </Modal>
+  </>
   );
 };
 
