@@ -204,6 +204,34 @@ export const unassignTask = createAsyncThunk(
   }
 );
 
+export const stopWorkingOnTask = createAsyncThunk(
+  'tasks/stopWorkingOnTask',
+  async (taskId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/tasks/${taskId}/stop/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to stop working on task');
+    }
+  }
+);
+
 export const completeTask = createAsyncThunk(
   'tasks/completeTask',
   async (taskId, { rejectWithValue, getState }) => {
@@ -433,6 +461,25 @@ const taskSlice = createSlice({
       .addCase(acceptTask.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to accept task';
+      })
+
+      // Stop working on task reducers
+      .addCase(stopWorkingOnTask.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(stopWorkingOnTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const task = action.payload;
+        const storyTasks = state.tasksByStoryId[task.story] || [];
+        const index = storyTasks.findIndex((t) => t.id === task.id);
+        if (index !== -1) {
+          storyTasks[index] = task;
+        }
+      })
+      .addCase(stopWorkingOnTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to stop working on task';
       })
 
       // Complete task reducers

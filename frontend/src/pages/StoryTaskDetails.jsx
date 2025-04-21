@@ -5,7 +5,7 @@ import AddTaskModal from './AddTaskModal';
 import TimeTracking from './TimeTracking';
 import axios from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
-import { acceptTask, completeTask, unassignTask } from '../store/slices/taskSlice';
+import { acceptTask, completeTask, stopWorkingOnTask, unassignTask } from '../store/slices/taskSlice';
 import EditTaskModal from './EditTaskModal';
 
 const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, onTaskAdded }) => {
@@ -81,6 +81,20 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       })
       .catch((error) => {
         console.error('Failed to reject task:', error);
+      });
+  };
+
+  const handleStopWorkingOnTask = (taskId) => {
+    dispatch(stopWorkingOnTask(taskId))
+      .unwrap()
+      .then((stoppedTask) => {
+        console.log('Task stopped:', stoppedTask);
+        setLocalTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === stoppedTask.id ? stoppedTask : task))
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to stop working on task:', error);
       });
   };
 
@@ -163,34 +177,44 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                     {task.assigned_to === currentUser.id && (
                       <>
                         {task.status === "ASSIGNED" && (
-                          <Button
-                            variant="success"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleAcceptTask(task.id)}
-                          >
-                            Accept task
-                          </Button>
-                        )}
-                        {(task.status === "IN_PROGRESS" || task.status === "ASSIGNED") && (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleRejectTask(task.id)}
-                          >
-                            Reject task
-                          </Button>
+                          <>
+                            <Button
+                              variant="success"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleAcceptTask(task.id)}
+                            >
+                              Accept task
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleRejectTask(task.id)}
+                            >
+                              Reject task
+                            </Button>
+                          </>
                         )}
                         {(task.status === "IN_PROGRESS") && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleCompleteTask(task.id)}
-                          >
-                            Task completed
-                          </Button>
+                          <>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleCompleteTask(task.id)}
+                            >
+                              Task completed
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleStopWorkingOnTask(task.id)}
+                            >
+                              Stop work
+                            </Button>
+                          </>
                         )}
                       </>
                     )}

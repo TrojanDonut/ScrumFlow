@@ -429,9 +429,8 @@ class TaskStopView(views.APIView):
                 description=request.data.get('description', '')
             )
             
-        return Response({
-            "message": "Stopped working on task."
-        })
+        serializer = TaskSerializer(task)
+        return Response(serializer.data)
 
 
 class TaskCompleteView(views.APIView):
