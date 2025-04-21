@@ -113,7 +113,7 @@ export const addTaskToStory = createAsyncThunk(
         }
       );
 
-      return response.data;
+      return { task: response.data, storyId };
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to add task');
     }
@@ -339,6 +339,21 @@ const taskSlice = createSlice({
     clearTaskError: (state) => {
       state.error = null;
     },
+    addTaskToStoryLocally: (state, action) => {
+      const { task, storyId } = action.payload;
+      if (!state.tasksByStoryId[storyId]) {
+        state.tasksByStoryId[storyId] = [];
+      }
+      // Remove any existing task with the same ID (for optimistic updates)
+      state.tasksByStoryId[storyId] = state.tasksByStoryId[storyId].filter(t => t.id !== task.id);
+      state.tasksByStoryId[storyId].push(task);
+    },
+    removeTaskLocally: (state, action) => {
+      const { taskId, storyId } = action.payload;
+      if (state.tasksByStoryId[storyId]) {
+        state.tasksByStoryId[storyId] = state.tasksByStoryId[storyId].filter(task => task.id !== taskId);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -399,7 +414,11 @@ const taskSlice = createSlice({
       })
       .addCase(addTaskToStory.fulfilled, (state, action) => {
         state.loading = false;
-        state.tasksByStoryId[action.payload.story].push(action.payload);
+        const { task, storyId } = action.payload;
+        if (!state.tasksByStoryId[storyId]) {
+          state.tasksByStoryId[storyId] = [];
+        }
+        state.tasksByStoryId[storyId].push(task);
       })
       .addCase(addTaskToStory.rejected, (state, action) => {
         state.loading = false;
@@ -558,5 +577,5 @@ const taskSlice = createSlice({
   },
 });
 
-export const { clearTaskError } = taskSlice.actions;
+export const { clearTaskError, addTaskToStoryLocally, removeTaskLocally } = taskSlice.actions;
 export default taskSlice.reducer;
