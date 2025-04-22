@@ -542,7 +542,6 @@ class UpdateStoryStatusView(APIView):
             # Only Product Owner can ACCEPT/REJECT stories
             return [IsAuthenticated(), IsProductOwnerFromStory()]
         # Other status updates might have different rules...
-        # Add your other permission logic here
         return [IsAuthenticated(), IsProjectMemberFromStory()]
     
     def post(self, request, story_id, *args, **kwargs):
@@ -561,9 +560,9 @@ class UpdateStoryStatusView(APIView):
             # Set new status
             story.status = new_status
             
-            # If story is REJECTED, remove it from sprint
-            if new_status == 'REJECTED':
-                story.sprint = None  # Remove from sprint when rejected
+            # Če je zgodba sprejeta ali zavrnjena, jo odstrani iz sprinta
+            if new_status in ['ACCEPTED', 'REJECTED']:
+                story.sprint = None
                 
             story.save()
             

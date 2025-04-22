@@ -274,6 +274,7 @@ export const updateStoryStatus = createAsyncThunk(
         throw new Error('No token found');
       }
 
+      console.log(`Sending request to update story ${storyId} status to ${status}`);
       const response = await axios.post(
         `${API_URL}/user-stories/${storyId}/update-status/`,
         { status },
@@ -285,7 +286,8 @@ export const updateStoryStatus = createAsyncThunk(
           withCredentials: true,
         }
       );
-      console.log(`Story ${storyId} status updated to ${status}:`, response.data);
+      console.log(`Story ${storyId} status updated to ${status}. Response:`, response.data);
+      console.log(`Sprint field in response: ${response.data.sprint}`);
       return response.data;
     } catch (error) {
       console.error('Error updating story status:', error.response?.data || error.message);
@@ -556,48 +558,47 @@ const storySlice = createSlice({
       .addCase(updateStoryStatus.fulfilled, (state, action) => {
         state.loading = false;
         
-        const updatedStory = action.payload;
+        const updatedStory = {
+          ...action.payload,
+          // Eksplicitno nastavimo sprint na null za ACCEPTED in REJECTED zgodbe
+          sprint: action.payload.status === 'ACCEPTED' || action.payload.status === 'REJECTED' 
+            ? null 
+            : action.payload.sprint
+        };
         
-        // Posodobi zgodbo v seznamu zgodb sprinta
-        const storyIndex = state.stories.findIndex(story => story.id === updatedStory.id);
-        if (storyIndex !== -1) {
-          state.stories[storyIndex] = updatedStory;
+        // Če je zgodba sprejeta ali zavrnjena, jo odstrani iz seznama zgodb sprinta
+        if (updatedStory.status === 'ACCEPTED' || updatedStory.status === 'REJECTED') {
+          state.stories = state.stories.filter(story => story.id !== updatedStory.id);
+        } else {
+          // Posodobi zgodbo v seznamu zgodb sprinta
+          const storyIndex = state.stories.findIndex(story => story.id === updatedStory.id);
+          if (storyIndex !== -1) {
+            state.stories[storyIndex] = updatedStory;
+          }
         }
         
-        // Če je zgodba sprejeta, jo premakni v "finished" seznam
+        // Posodobi backlog glede na status
+        
+        // Najprej odstrani zgodbo iz vseh kategorij
+        state.backlogStories.unrealized.active = state.backlogStories.unrealized.active.filter(
+          story => story.id !== updatedStory.id
+        );
+        
+        state.backlogStories.unrealized.unactive = state.backlogStories.unrealized.unactive.filter(
+          story => story.id !== updatedStory.id
+        );
+        
+        state.backlogStories.finished = state.backlogStories.finished.filter(
+          story => story.id !== updatedStory.id
+        );
+        
+        // Dodaj v ustrezno kategorijo
         if (updatedStory.status === 'ACCEPTED') {
-          // Najprej odstrani zgodbo iz vseh kategorij
-          state.backlogStories.unrealized.active = state.backlogStories.unrealized.active.filter(
-            story => story.id !== updatedStory.id
-          );
-          state.backlogStories.unrealized.unactive = state.backlogStories.unrealized.unactive.filter(
-            story => story.id !== updatedStory.id
-          );
-          
-          // Dodaj v končane zgodbe
-          if (!state.backlogStories.finished.some(story => story.id === updatedStory.id)) {
-            state.backlogStories.finished.push(updatedStory);
-          }
+          // Dodaj v končane zgodbe (finished)
+          state.backlogStories.finished.push({...updatedStory, sprint: null});
         } else if (updatedStory.status === 'REJECTED') {
-          // Če je zgodba zavrnjena, odstrani iz active in premakni v unactive (nepripisane zgodbe)
-          state.backlogStories.unrealized.active = state.backlogStories.unrealized.active.filter(
-            story => story.id !== updatedStory.id
-          );
-          state.backlogStories.finished = state.backlogStories.finished.filter(
-            story => story.id !== updatedStory.id
-          );
-          
-          // Dodaj v unactive (nepripisane zgodbe)
-          // Prepričaj se, da zavrnjeni zgodbi odstranimo sprint ID, da se prestavi v "unassigned"
-          const rejectedStory = {...updatedStory, sprint: null};
-          
-          // Dodaj v unactive samo, če ni že tam
-          if (!state.backlogStories.unrealized.unactive.some(story => story.id === rejectedStory.id)) {
-            state.backlogStories.unrealized.unactive.push(rejectedStory);
-          }
-          
-          // Odstrani zgodbo iz seznama zgodb v sprintu
-          state.stories = state.stories.filter(story => story.id !== updatedStory.id);
+          // Dodaj v nepripisane zgodbe (unactive)
+          state.backlogStories.unrealized.unactive.push({...updatedStory, sprint: null});
         }
       })
       .addCase(updateStoryStatus.rejected, (state, action) => {

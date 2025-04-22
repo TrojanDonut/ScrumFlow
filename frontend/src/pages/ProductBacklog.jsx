@@ -82,7 +82,6 @@ const ProductBacklog = () => {
   const handleRejectStory = async (storyId) => {
     try {
       await dispatch(updateStoryStatus({ storyId, status: 'REJECTED' })).unwrap();
-      // Osveži backlog z najnovejšimi podatki
       dispatch(fetchBacklogStories(id));
     } catch (err) {
       console.error("Error rejecting story:", err);

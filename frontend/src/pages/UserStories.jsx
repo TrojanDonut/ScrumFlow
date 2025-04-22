@@ -73,21 +73,21 @@ const UserStories = () => {
   const handleAcceptStory = async (storyId) => {
     try {
       await dispatch(updateStoryStatus({ storyId, status: 'ACCEPTED' })).unwrap();
+      // Osveži sprint zgodbe in backlog!
       dispatch(fetchStories({ projectId, sprintId }));
+      dispatch(fetchBacklogStories(projectId));
     } catch (err) {
-      console.error("Error accepting story:", err);
+      setError('Failed to accept story: ' + (err.message || 'Unknown error'));
     }
   };
 
   const handleRejectStory = async (storyId) => {
     try {
       await dispatch(updateStoryStatus({ storyId, status: 'REJECTED' })).unwrap();
-      // Osveži zgodbe v sprintu
+      // Osveži sprint zgodbe in backlog!
       dispatch(fetchStories({ projectId, sprintId }));
-      // Osveži backlog, ker bo sedaj tam nova zavrnjena zgodba
       dispatch(fetchBacklogStories(projectId));
     } catch (err) {
-      console.error("Error rejecting story:", err);
       setError('Failed to reject story: ' + (err.message || 'Unknown error'));
     }
   };
