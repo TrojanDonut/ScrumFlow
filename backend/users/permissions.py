@@ -233,3 +233,54 @@ class IsProjectMemberFromSprint(BasePermission):
                 return False
                 
         return False
+
+class IsProductOwnerFromStory(BasePermission):
+    """
+    Permission to check if user is a Product Owner for the project that owns the story.
+    """
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+            
+        story_id = view.kwargs.get('story_id')
+        if not story_id:
+            return False
+            
+        try:
+            from stories.models import UserStory
+            story = UserStory.objects.get(id=story_id)
+            project_id = story.project_id
+            
+            return ProjectMember.objects.filter(
+                project_id=project_id,
+                user=request.user,
+                role=ProjectMember.Role.PRODUCT_OWNER
+            ).exists()
+        except UserStory.DoesNotExist:
+            return False
+
+class IsProjectMemberFromStory(BasePermission):
+    """
+    Permission to check if user is a member of the project that owns the story.
+    """
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+            
+        story_id = view.kwargs.get('story_id')
+        if not story_id:
+            return False
+            
+        try:
+            from stories.models import UserStory
+            story = UserStory.objects.get(id=story_id)
+            project_id = story.project.id
+            
+            return ProjectMember.objects.filter(
+                project_id=project_id,
+                user=request.user
+            ).exists()
+        except UserStory.DoesNotExist:
+            return False

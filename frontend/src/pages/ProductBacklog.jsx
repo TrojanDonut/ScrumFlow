@@ -17,7 +17,7 @@ import {
   Modal,
   Form
 } from 'react-bootstrap';
-import { fetchBacklogStories, fetchStories, resetBacklogStories, updateStory, returnStoriesToBacklog } from '../store/slices/storySlice';
+import { fetchBacklogStories, fetchStories, resetBacklogStories, updateStory, returnStoriesToBacklog, updateStoryStatus } from '../store/slices/storySlice';
 import { fetchProjectById } from '../store/slices/projectSlice';
 import { fetchCompletedSprints } from '../store/slices/sprintSlice';
 import AddUserStory from './AddUserStory';
@@ -38,10 +38,12 @@ const ProductBacklog = () => {
   const [newStoryPoints, setNewStoryPoints] = useState('');
   const [storyToEstimate, setStoryToEstimate] = useState(null);
   const [activeTab, setActiveTab] = useState('unrealized');
-  // Add these state variables at the top of the component
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [storyToUpdateStatus, setStoryToUpdateStatus] = useState(null);
   const [newStatus, setNewStatus] = useState('');
+  const [errorMessage, setError] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
+  const [returnError, setReturnError] = useState(null);
 
   // Handler to open the status update modal
   const handleOpenStatusModal = (story) => {
@@ -66,9 +68,27 @@ const ProductBacklog = () => {
       console.error('Failed to update story status:', err);
     }
   };
-  const [errorMessage, setError] = useState(null);
-  const [fetchError, setFetchError] = useState(null);
-  const [returnError, setReturnError] = useState(null);
+
+  const handleAcceptStory = async (storyId) => {
+    try {
+      await dispatch(updateStoryStatus({ storyId, status: 'ACCEPTED' })).unwrap();
+      dispatch(fetchBacklogStories(id));
+    } catch (err) {
+      console.error("Error accepting story:", err);
+      setError('Failed to accept story: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const handleRejectStory = async (storyId) => {
+    try {
+      await dispatch(updateStoryStatus({ storyId, status: 'REJECTED' })).unwrap();
+      // Osveži backlog z najnovejšimi podatki
+      dispatch(fetchBacklogStories(id));
+    } catch (err) {
+      console.error("Error rejecting story:", err);
+      setError('Failed to reject story: ' + (err.message || 'Unknown error'));
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -281,6 +301,26 @@ const ProductBacklog = () => {
                     </Badge>
                   </div>
                   <div>
+                    {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
+                      <>
+                        <Button 
+                          variant="success" 
+                          size="sm" 
+                          className="me-2"
+                          onClick={() => handleAcceptStory(story.id)}
+                        >
+                          Accept Story
+                        </Button>
+                        <Button 
+                          variant="danger" 
+                          size="sm" 
+                          className="me-2"
+                          onClick={() => handleRejectStory(story.id)}
+                        >
+                          Reject Story
+                        </Button>
+                      </>
+                    )}
                     {!story.sprint && currentProjectRole === "SCRUM_MASTER" && (
                       <>
                           <Button 

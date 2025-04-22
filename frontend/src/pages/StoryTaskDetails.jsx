@@ -149,7 +149,6 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         )}
       </Modal.Body>
       <Modal.Footer>
-        {/* Dodaj gumbe za sprejem/zavrnitev zgodbe za Product Ownerja */}
         {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
           <>
             <Button 

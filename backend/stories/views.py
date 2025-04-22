@@ -12,7 +12,9 @@ from users.permissions import (
     IsScrumMaster,
     IsProjectMemberFromSprint,
     IsScrumMasterFromSprint,
-    IsProductOwner
+    IsProductOwner,
+    IsProductOwnerFromStory,
+    IsProjectMemberFromStory
 )
 from projects.models import ProjectMember
 
@@ -529,3 +531,46 @@ class ReturnStoriesToBacklogView(APIView):
                 {"error": f"Failed to return stories to backlog: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class UpdateStoryStatusView(APIView):
+    """API view for updating the status of a story."""
+    
+    def get_permissions(self):
+        """Return the list of permissions."""
+        if self.request.data.get('status') in ['ACCEPTED', 'REJECTED']:
+            # Only Product Owner can ACCEPT/REJECT stories
+            return [IsAuthenticated(), IsProductOwnerFromStory()]
+        # Other status updates might have different rules...
+        # Add your other permission logic here
+        return [IsAuthenticated(), IsProjectMemberFromStory()]
+    
+    def post(self, request, story_id, *args, **kwargs):
+        """Update the status of a story."""
+        try:
+            story = UserStory.objects.get(id=story_id)
+            new_status = request.data.get('status')
+            
+            # Validation: Can only ACCEPT/REJECT stories that are DONE
+            if new_status in ['ACCEPTED', 'REJECTED'] and story.status != 'DONE':
+                return Response(
+                    {"error": f"Can only {new_status.lower()} stories that are in DONE state."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Set new status
+            story.status = new_status
+            
+            # If story is REJECTED, remove it from sprint
+            if new_status == 'REJECTED':
+                story.sprint = None  # Remove from sprint when rejected
+                
+            story.save()
+            
+            # Return the serialized story
+            serializer = UserStorySerializer(story)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except UserStory.DoesNotExist:
+            return Response({"error": "Story not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

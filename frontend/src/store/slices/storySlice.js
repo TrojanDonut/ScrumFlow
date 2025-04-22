@@ -579,8 +579,25 @@ const storySlice = createSlice({
             state.backlogStories.finished.push(updatedStory);
           }
         } else if (updatedStory.status === 'REJECTED') {
-          // Če je zgodba zavrnjena, jo obdrži v aktivnih zgodbah
-          // (bo kasneje ob koncu sprinta vrnjena v backlog)
+          // Če je zgodba zavrnjena, odstrani iz active in premakni v unactive (nepripisane zgodbe)
+          state.backlogStories.unrealized.active = state.backlogStories.unrealized.active.filter(
+            story => story.id !== updatedStory.id
+          );
+          state.backlogStories.finished = state.backlogStories.finished.filter(
+            story => story.id !== updatedStory.id
+          );
+          
+          // Dodaj v unactive (nepripisane zgodbe)
+          // Prepričaj se, da zavrnjeni zgodbi odstranimo sprint ID, da se prestavi v "unassigned"
+          const rejectedStory = {...updatedStory, sprint: null};
+          
+          // Dodaj v unactive samo, če ni že tam
+          if (!state.backlogStories.unrealized.unactive.some(story => story.id === rejectedStory.id)) {
+            state.backlogStories.unrealized.unactive.push(rejectedStory);
+          }
+          
+          // Odstrani zgodbo iz seznama zgodb v sprintu
+          state.stories = state.stories.filter(story => story.id !== updatedStory.id);
         }
       })
       .addCase(updateStoryStatus.rejected, (state, action) => {
