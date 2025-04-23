@@ -11,15 +11,24 @@ services:
       - ALLOWED_HOSTS=neretva.mknz.si
     command: >
       sh -c "python manage.py migrate &&
+             python manage.py create_initial_data &&
              python manage.py collectstatic --noinput &&
              gunicorn scrum_project.wsgi:application --bind 0.0.0.0:8000"
     restart: always
+    networks:
+      - scrumflow_network
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend.prod
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=https://neretva.mknz.si/api
     restart: always
+    networks:
+      - scrumflow_network
 
   nginx:
     image: nginx:alpine
@@ -31,6 +40,12 @@ services:
       - backend
       - frontend
     restart: always
+    networks:
+      - scrumflow_network
+
+networks:
+  scrumflow_network:
+    driver: bridge
 
 volumes:
   frontend-node-modules: 
