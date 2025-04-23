@@ -83,7 +83,9 @@ class Task(models.Model):
             session.save()
             # Log the time spent
             hours = session.duration()
-            if hours > 0:
+            if hours < 0.5:
+                TimeLog.log_time(task=self, user=user, hours=0.5, description="Auto-logged from session")
+            else:
                 TimeLog.log_time(task=self, user=user, hours=hours, description="Auto-logged from session")
             return True
         return False
