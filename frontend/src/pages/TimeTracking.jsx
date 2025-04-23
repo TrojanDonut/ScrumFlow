@@ -12,7 +12,7 @@ const TimeTracking = ({ task, onTimeLogged }) => {
   const [activeSession, setActiveSession] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const currentUser = useSelector((state) => state.auth.user);
-  const API_URL = 'http://localhost:8000/api';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
   
   // Update tracking state and task status whenever task changes
   useEffect(() => {
