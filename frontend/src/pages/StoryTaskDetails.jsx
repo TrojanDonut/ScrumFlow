@@ -203,13 +203,14 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                         )}
                       </>
                     )}
+                    {currentProjectRole === 'SCRUM_MASTER' && (
                     <Button
                       variant="warning"
                       size="sm"
                       onClick={() => handleEditTask(task)}
                     >
                       Edit task
-                    </Button>
+                    </Button>)}
                   </div>
                 </div>
                 <div>assigned to: {getUsername(task.assigned_to)}</div>
