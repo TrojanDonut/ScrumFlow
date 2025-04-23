@@ -133,14 +133,25 @@ const UserStoryColumn = ({
                   >
                     Details
                   </Button>
-                  {sprintStatus !== 'past' && userProjectRole !== "DEVELOPER" && (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => onRemoveFromSprint(story.id)}
-                    >
-                      Remove from Sprint
-                    </Button>
+                  {sprintStatus !== 'past' && (
+                    currentProjectRole === 'SCRUM_MASTER' ? (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => onRemoveFromSprint(story.id)}
+                      >
+                        Remove from Sprint
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled
+                        title="Only Scrum Master can remove stories from sprint"
+                      >
+                        Remove from Sprint
+                      </Button>
+                    )
                   )}
                 </div>
               </div>
