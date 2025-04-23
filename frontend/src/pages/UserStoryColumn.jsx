@@ -133,7 +133,7 @@ const UserStoryColumn = ({
                   >
                     Details
                   </Button>
-                  {sprintStatus !== 'past' && (
+                  {sprintStatus !== 'past' && userProjectRole !== "DEVELOPER" && (
                     <Button
                       variant="danger"
                       size="sm"
