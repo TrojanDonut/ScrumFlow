@@ -43,6 +43,7 @@ class Sprint(models.Model):
                     "The start date cannot be in the past. "
                     "Please select a future date."
                 )
+            
 
             # Check for overlapping sprints in the same project
             overlapping_sprints = Sprint.objects.filter(
@@ -61,8 +62,20 @@ class Sprint(models.Model):
                     "Please choose different dates."
                 )
 
+
+
+#stara save metoda
+    """
     def save(self, *args, **kwargs):
         self.clean()
+        super().save(*args, **kwargs)
+    """
+
+    # Posodobitev metode save() v modelu Sprint
+    def save(self, *args, **kwargs):
+        bypass_validation = kwargs.pop('bypass_validation', False)
+        if not bypass_validation:
+            self.clean()
         super().save(*args, **kwargs)
 
     @property

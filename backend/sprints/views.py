@@ -53,12 +53,15 @@ class SprintListCreateView(generics.ListCreateAPIView):
                 {"error": "End date must be after start date."}
             )
             
+
+        
         # Check if start_date is in the past
         if start_date < timezone.now().date():
             raise serializers.ValidationError(
                 {"error": "Start date cannot be in the past."}
             )
-            
+        
+              
         # Check for overlapping sprints
         overlapping_sprints = Sprint.objects.filter(
             project_id=project_id
@@ -72,7 +75,7 @@ class SprintListCreateView(generics.ListCreateAPIView):
             raise serializers.ValidationError(
                 {"error": "Sprint dates overlap with existing sprints."}
             )
-            
+        
         serializer.save(project_id=project_id)
 
 

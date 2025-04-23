@@ -64,13 +64,23 @@ export const createSprint = createAsyncThunk(
         throw new Error('No token found');
       }
 
-      const response = await axios.post(`${API_URL}/projects/${projectId}/sprints/`, sprintData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      });
+      // Add the project ID to the sprint data
+      const sprintDataWithProject = {
+        ...sprintData,
+        project: projectId  // Add this line
+      };
+
+      const response = await axios.post(
+        `${API_URL}/projects/${projectId}/sprints/`, 
+        sprintDataWithProject,  // Send updated data
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -132,9 +142,38 @@ export const updateSprint = createAsyncThunk(
   }
 );
 
+export const fetchCompletedSprints = createAsyncThunk(
+  'sprints/fetchCompletedSprints',
+  async (projectId, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/projects/${projectId}/sprints/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      
+      // Filter samo zaključene sprinte
+      const completedSprints = response.data.filter(sprint => sprint.is_completed);
+      return completedSprints;
+    } catch (error) {
+      console.error('Error fetching completed sprints:', error);
+      return rejectWithValue(error.response?.data || 'Failed to fetch completed sprints');
+    }
+  }
+);
+
 const initialState = {
   sprints: [],
   currentSprint: null,
+  completedSprints: [], // Dodano polje za zaključene sprinte
   loading: false,
   error: null,
 };
@@ -203,7 +242,20 @@ const sprintSlice = createSlice({
         state.loading = false;
         state.error = 'Failed to fetch sprint by ID';
       })
-      ;
+      
+      // Fetch completed sprints reducers
+      .addCase(fetchCompletedSprints.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCompletedSprints.fulfilled, (state, action) => {
+        state.loading = false;
+        state.completedSprints = action.payload;
+      })
+      .addCase(fetchCompletedSprints.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch completed sprints';
+      });
   },
 });
 

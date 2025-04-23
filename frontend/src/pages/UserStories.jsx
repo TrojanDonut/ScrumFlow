@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Alert, ListGroup, Collapse } from 'react-bootstrap';
-import { fetchStories, removeStoryFromSprint, fetchBacklogStories, addStoryToSprint } from '../store/slices/storySlice';
+import { fetchStories, removeStoryFromSprint, fetchBacklogStories, addStoryToSprint, updateStoryStatus } from '../store/slices/storySlice';
 import { fetchSprintById } from '../store/slices/sprintSlice';
 import { fetchTasksByProject, fetchUsersForProject, addTaskToStory, addTaskToStoryLocally, removeTaskLocally } from '../store/slices/taskSlice';
 import { useDispatch, useSelector } from 'react-redux';
@@ -67,6 +67,28 @@ const UserStories = () => {
       dispatch(fetchBacklogStories(projectId)); // Re-fetch backlog stories with projectId
     } catch (err) {
       setError('Failed to remove story from sprint.');
+    }
+  };
+
+  const handleAcceptStory = async (storyId) => {
+    try {
+      await dispatch(updateStoryStatus({ storyId, status: 'ACCEPTED' })).unwrap();
+      // Osveži sprint zgodbe in backlog!
+      dispatch(fetchStories({ projectId, sprintId }));
+      dispatch(fetchBacklogStories(projectId));
+    } catch (err) {
+      setError('Failed to accept story: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const handleRejectStory = async (storyId) => {
+    try {
+      await dispatch(updateStoryStatus({ storyId, status: 'REJECTED' })).unwrap();
+      // Osveži sprint zgodbe in backlog!
+      dispatch(fetchStories({ projectId, sprintId }));
+      dispatch(fetchBacklogStories(projectId));
+    } catch (err) {
+      setError('Failed to reject story: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -236,11 +258,11 @@ const UserStories = () => {
     </div>
     {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
     <div className="row">
-      {states.map((state, index) => (
+      {categorizedStories.map((stories, index) => (
         <UserStoryColumn
-          key={state}
-          title={state}
-          stories={categorizedStories[index]}
+          key={states[index]}
+          title={states[index]}
+          stories={stories}
           onToggleExpand={toggleExpandStory}
           expandedStoryId={expandedStoryId}
           onRemoveFromSprint={handleRemoveFromSprint}
@@ -248,6 +270,9 @@ const UserStories = () => {
           projectUsers={projectUsers}
           sprint={currentSprint}
           onTaskAdded={handleAddTask}
+          handleAcceptStory={handleAcceptStory}
+          handleRejectStory={handleRejectStory}
+          currentProjectRole={currentProjectRole}
           currentActiveUser={user}
           userProjectRole={currentProjectRole}
         />

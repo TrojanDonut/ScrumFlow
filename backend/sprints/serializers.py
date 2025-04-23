@@ -25,14 +25,14 @@ class SprintSerializer(serializers.ModelSerializer):
                 "The end date cannot be before the start date. "
                 "Please select a valid date range."
             )
-
+        
         # Check that start date is not in the past (only for new sprints)
         if self.instance is None and start_date and start_date < timezone.now().date():
             raise serializers.ValidationError(
                 "The start date cannot be in the past. "
                 "Please select a future date."
             )
-
+        
         # Check that velocity is positive
         if velocity <= 0:
             raise serializers.ValidationError("Velocity must be greater than 0.")

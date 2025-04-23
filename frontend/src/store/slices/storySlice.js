@@ -230,6 +230,72 @@ export const addStoryToSprint = createAsyncThunk(
   }
 );
 
+export const returnStoriesToBacklog = createAsyncThunk(
+  'stories/returnStoriesToBacklog',
+  async ({ projectId, sprintId }, { rejectWithValue, getState }) => {
+    try {
+      console.log(`Returning incomplete stories from sprint ${sprintId} to backlog`);
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(
+        `${API_URL}/projects/${projectId}/sprints/${sprintId}/return-stories/`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true,
+        }
+      );
+      
+      console.log('Stories returned to backlog successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error returning stories to backlog:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || 'Failed to return stories to backlog');
+    }
+  }
+);
+
+export const updateStoryStatus = createAsyncThunk(
+  'stories/updateStoryStatus',
+  async ({ storyId, status }, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const token = auth.token;
+
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      console.log(`Sending request to update story ${storyId} status to ${status}`);
+      const response = await axios.post(
+        `${API_URL}/user-stories/${storyId}/update-status/`,
+        { status },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true,
+        }
+      );
+      console.log(`Story ${storyId} status updated to ${status}. Response:`, response.data);
+      console.log(`Sprint field in response: ${response.data.sprint}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating story status:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || `Failed to update story status to ${status}`);
+    }
+  }
+);
+
 const initialState = {
   stories: [],
   backlogStories: {
@@ -459,9 +525,88 @@ const storySlice = createSlice({
       .addCase(addStoryToSprint.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to add story to sprint';
+      })
+      .addCase(returnStoriesToBacklog.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(returnStoriesToBacklog.fulfilled, (state, action) => {
+        state.loading = false;
+        console.log('Stories returned to backlog:', action.payload);
+        
+        // Ne posodabljamo celotne strukture backlogStories,
+        // ker API ne vrača nove strukture, ampak samo podatke o uspehu operacije
+        
+        // Lahko dodamo komentar o uspehu operacije
+        state.lastAction = {
+          type: 'RETURN_TO_BACKLOG',
+          message: `Successfully returned ${action.payload.stories_count} stories to backlog`,
+          timestamp: new Date().toISOString()
+        };
+        
+        // Ne spreminjamo `state.stories`, ker moramo podatke pridobiti na novo
+        // s fetchBacklogStories, kar je že implementirano v handleReturnStoriesToBacklog
+      })
+      .addCase(returnStoriesToBacklog.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to return stories to backlog';
+      })
+      .addCase(updateStoryStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateStoryStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        
+        const updatedStory = {
+          ...action.payload,
+          // Eksplicitno nastavimo sprint na null za ACCEPTED in REJECTED zgodbe
+          sprint: action.payload.status === 'ACCEPTED' || action.payload.status === 'REJECTED' 
+            ? null 
+            : action.payload.sprint
+        };
+        
+        // Če je zgodba sprejeta ali zavrnjena, jo odstrani iz seznama zgodb sprinta
+        if (updatedStory.status === 'ACCEPTED' || updatedStory.status === 'REJECTED') {
+          state.stories = state.stories.filter(story => story.id !== updatedStory.id);
+        } else {
+          // Posodobi zgodbo v seznamu zgodb sprinta
+          const storyIndex = state.stories.findIndex(story => story.id === updatedStory.id);
+          if (storyIndex !== -1) {
+            state.stories[storyIndex] = updatedStory;
+          }
+        }
+        
+        // Posodobi backlog glede na status
+        
+        // Najprej odstrani zgodbo iz vseh kategorij
+        state.backlogStories.unrealized.active = state.backlogStories.unrealized.active.filter(
+          story => story.id !== updatedStory.id
+        );
+        
+        state.backlogStories.unrealized.unactive = state.backlogStories.unrealized.unactive.filter(
+          story => story.id !== updatedStory.id
+        );
+        
+        state.backlogStories.finished = state.backlogStories.finished.filter(
+          story => story.id !== updatedStory.id
+        );
+        
+        // Dodaj v ustrezno kategorijo
+        if (updatedStory.status === 'ACCEPTED') {
+          // Dodaj v končane zgodbe (finished)
+          state.backlogStories.finished.push({...updatedStory, sprint: null});
+        } else if (updatedStory.status === 'REJECTED') {
+          // Dodaj v nepripisane zgodbe (unactive)
+          state.backlogStories.unrealized.unactive.push({...updatedStory, sprint: null});
+        }
+      })
+      .addCase(updateStoryStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update story status';
       });
   },
 });
 
 export const { clearStoryError, resetBacklogStories } = storySlice.actions;
-export default storySlice.reducer; 
+export default storySlice.reducer;

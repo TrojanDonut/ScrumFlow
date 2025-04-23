@@ -1,9 +1,14 @@
 from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from .models import Project, ProjectMember, ProjectWallPost, ProjectWallComment, ProjectDocument
+from stories.models import UserStory
 from .serializers import (
     ProjectSerializer, ProjectMemberSerializer, ProjectWallPostSerializer,
     ProjectWallCommentSerializer, ProjectDocumentSerializer
 )
+from stories.serializers import UserStorySerializer  # Če je v stories modulu
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsProjectMember, IsScrumMaster
@@ -306,3 +311,33 @@ class ProjectDocumentDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     queryset = ProjectDocument.objects.all()
     serializer_class = ProjectDocumentSerializer
+
+class UpdateStoryStatusView(APIView):
+    """API view for updating the status of a story."""
+    
+    def post(self, request, story_id, *args, **kwargs):
+        try:
+            story = UserStory.objects.get(id=story_id)
+            new_status = request.data.get('status')
+            
+            # Validation: Can only ACCEPT/REJECT stories that are DONE
+            if new_status in ['ACCEPTED', 'REJECTED'] and story.status != 'DONE':
+                return Response({"error": f"Can only {new_status.lower()} stories that are in DONE state."}, 
+                               status=status.HTTP_400_BAD_REQUEST)
+            
+            # Set new status
+            story.status = new_status
+            
+            # Če je zgodba sprejeta ali zavrnjena, jo odstrani iz sprinta
+            if new_status in ['ACCEPTED', 'REJECTED']:
+                story.sprint = None
+                
+            story.save()
+            
+            # Return the serialized story
+            serializer = UserStorySerializer(story)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except UserStory.DoesNotExist:
+            return Response({"error": "Story not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

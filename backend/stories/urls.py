@@ -46,4 +46,9 @@ urlpatterns = [
     ),
     path('stories/<int:story_id>/move-to-sprint/<int:sprint_id>/', views.MoveStoryToSprintView.as_view(), name='move-story-to-sprint'),
     path('stories/<int:story_id>/mark-as-realized/', views.MarkStoryAsRealizedView.as_view(), name='mark-story-as-realized'),
+    path(
+        'projects/<int:project_id>/sprints/<int:sprint_id>/return-stories/',
+        views.ReturnStoriesToBacklogView.as_view(),
+        name='return-stories-to-backlog'
+    ),
 ]

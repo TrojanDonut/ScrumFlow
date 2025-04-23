@@ -3,12 +3,10 @@ import { Modal, Button } from 'react-bootstrap';
 import { generateTaskStatusTag } from './TaskUtils';
 import AddTaskModal from './AddTaskModal';
 import TimeTracking from './TimeTracking';
-import axios from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
 import { acceptTask, completeTask, stopWorkingOnTask, unassignTask } from '../store/slices/taskSlice';
 import EditTaskModal from './EditTaskModal';
-
-const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, onTaskAdded }) => {
+const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, currentProjectRole, onTaskAdded, handleRejectStory, handleAcceptStory }) => {
   const [showEditTaskModal, setShowEditTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
@@ -29,30 +27,16 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
     return user ? user.user.username : 'nobody';
   };
 
-  // Handle task refresh when time is logged
-  const handleTimeLogged = async (taskId) => {
-    try {
-      // Fetch the updated task directly to get the latest status
-      const response = await axios.get(`http://localhost:8000/api/tasks/${taskId}/`);
-      const updatedTask = response.data;
-      
-      // Update the local task in our state
-      setLocalTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId ? updatedTask : task
-        )
-      );
-      
-      // Also notify the parent component
-      if (onTaskAdded) {
-        onTaskAdded(story.id, null);
-      }
-    } catch (error) {
-      console.error('Error refreshing task:', error);
-      // Fall back to parent refresh if direct fetch fails
-      if (onTaskAdded) {
-        onTaskAdded(story.id, null);
-      }
+
+  // Handler for when time is logged
+  const handleTimeLogged = (taskId) => {
+    // Refresh the task data after time logging
+    const updatedTasks = [...localTasks];
+    setLocalTasks(updatedTasks);
+
+    // Call the parent component's refresh method if provided
+    if (onTaskAdded) {
+      onTaskAdded(story.id, { refresh: true });
     }
   };
 
@@ -204,7 +188,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                               className="me-2"
                               onClick={() => handleCompleteTask(task.id)}
                             >
-                              Task completed
+                              Complete task
                             </Button>
                             <Button
                               variant="danger"
@@ -212,19 +196,20 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                               className="me-2"
                               onClick={() => handleStopWorkingOnTask(task.id)}
                             >
-                              Stop work
+                              Unassign
                             </Button>
                           </>
                         )}
                       </>
                     )}
+                    {currentProjectRole === 'SCRUM_MASTER' && (
                     <Button
                       variant="warning"
                       size="sm"
                       onClick={() => handleEditTask(task)}
                     >
                       Edit task
-                    </Button>
+                    </Button>)}
                   </div>
                 </div>
                 <div>assigned to: {getUsername(task.assigned_to)}</div>
@@ -242,6 +227,28 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         )}
       </Modal.Body>
       <Modal.Footer>
+        {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
+          <>
+            <Button
+              variant="success"
+              onClick={() => {
+                handleAcceptStory(story.id);
+                handleClose();
+              }}
+            >
+              Accept Story
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                handleRejectStory(story.id);
+                handleClose();
+              }}
+            >
+              Reject Story
+            </Button>
+          </>
+        )}
         {story.status !== 'DONE' && sprintStatus === 'active' && (
           <Button variant="outline-primary" onClick={() => setShowAddTaskModal(true)}>
               Add new task
@@ -252,7 +259,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         </Button>
       </Modal.Footer>
     </Modal>
-    
+
     {/* Edit Task Modal */}
     {renderEditTaskModal()}
 
@@ -263,14 +270,8 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       storyId={story.id}
       users={users}
       onTaskAdded={(storyId, taskData) => {
-        // Update local tasks immediately if we have taskData
-        if (taskData) {
-          setLocalTasks(prev => [...prev, taskData]);
-        }
-        
-        // Notify parent component
         onTaskAdded(storyId, taskData);
-        setShowAddTaskModal(false);
+        handleClose();
       }}
     />
     </>

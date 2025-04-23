@@ -17,6 +17,9 @@ const UserStoryColumn = ({
   projectUsers,
   sprint,
   onTaskAdded,
+  handleAcceptStory,
+  handleRejectStory,
+  currentProjectRole,
   currentActiveUser,
   userProjectRole
 }) => {
@@ -66,8 +69,11 @@ const UserStoryColumn = ({
         story={selectedStory}
         tasks={tasks}
         users={projectUsers}
-        sprintStatus={sprintStatus}
+        sprintStatus={sprint?.is_active ? 'active' : 'inactive'}
+        currentProjectRole={currentProjectRole}
         onTaskAdded={onTaskAdded}
+        handleAcceptStory={handleAcceptStory}
+        handleRejectStory={handleRejectStory}
       />
     );
   };
@@ -127,7 +133,7 @@ const UserStoryColumn = ({
                   >
                     Details
                   </Button>
-                  {sprintStatus !== 'past' && (
+                  {sprintStatus !== 'past' && userProjectRole !== "DEVELOPER" && (
                     <Button
                       variant="danger"
                       size="sm"
