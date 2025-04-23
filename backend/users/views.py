@@ -42,8 +42,12 @@ class UserListCreateView(generics.ListCreateAPIView):
         queryset = super().get_queryset()
         show_all = self.request.query_params.get('show_all', 'false').lower() == 'true'
         if not show_all:
-            queryset = queryset.filter(user_type=User.UserType.USER)
+            queryset = queryset.filter(user_type=User.UserType.USER, is_deleted=False)
         return queryset
+    
+    def perform_destroy(self, instance):
+        """Override destroy to perform a soft delete."""
+        instance.delete()
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
