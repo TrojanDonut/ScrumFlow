@@ -5,6 +5,10 @@ from stories.models import UserStory
 from django.utils import timezone
 
 
+class TaskManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
 class Task(models.Model):
     """Task model for breaking down user stories into smaller units of work"""
 
@@ -18,6 +22,7 @@ class Task(models.Model):
     title = models.CharField(max_length=200, default=None)
     description = models.TextField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.UNASSIGNED)
+    is_deleted = models.BooleanField(default=False)
     estimated_hours = models.DecimalField(
         max_digits=5,
         decimal_places=2,
@@ -89,6 +94,11 @@ class Task(models.Model):
                 TimeLog.log_time(task=self, user=user, hours=hours, description="Auto-logged from session")
             return True
         return False
+    
+    def delete(self, *args, **kwargs):
+        """Soft delete the task by marking it as deleted."""
+        self.is_deleted = True
+        self.save()
 
 
 class TimeLog(models.Model):

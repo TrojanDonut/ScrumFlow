@@ -173,7 +173,7 @@ class TaskListCreateView(generics.ListCreateAPIView):
         return [IsAuthenticated(), IsTaskScrumMasterOrDeveloper()]
 
     def get_queryset(self):
-        return Task.objects.all()
+        return Task.objects.all(is_deleted=False)
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -200,11 +200,15 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
         return [IsAuthenticated(), IsTaskProjectMember()]
 
     def get_queryset(self):
-        return Task.objects.all()
+        return Task.objects.filter(is_deleted=False)
     
     def get_object(self):
         obj = super().get_object()
         return obj
+    
+    def perform_destroy(self, instance):
+        """Override destroy to perform a soft delete."""
+        instance.delete()
 
 
 class ProjectTasksView(generics.ListAPIView):
@@ -221,7 +225,8 @@ class ProjectTasksView(generics.ListAPIView):
     def get_queryset(self):
         project_id = self.kwargs['project_id']
         return Task.objects.filter(
-            story__project_id=project_id
+            story__project_id=project_id,
+            is_deleted=False
         ) | Task.objects.filter(
             story__project_id__isnull=True,
             story__sprint__project_id=project_id
@@ -250,7 +255,7 @@ class StoryTasksView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         story_id = self.kwargs['story_id']
-        return Task.objects.filter(story_id=story_id)
+        return Task.objects.filter(story_id=story_id, is_deleted=False)
     
     def perform_create(self, serializer):
         story_id = self.kwargs['story_id']

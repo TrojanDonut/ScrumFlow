@@ -287,7 +287,6 @@ const UserManagement = () => {
               <th>Email</th>
               <th>Full Name</th>
               <th>Role</th>
-              <th>Status</th>
               {isSystemAdmin && <th>Actions</th>}
             </tr>
           </thead>
@@ -298,7 +297,6 @@ const UserManagement = () => {
                 <td>{user.email}</td>
                 <td>{`${user.first_name} ${user.last_name}`}</td>
                 <td>{user.user_type}</td>
-                <td>{user.is_active ? 'Active' : 'Inactive'}</td>
                 {isSystemAdmin && (
                   <td>
                     <Button 
@@ -537,16 +535,6 @@ const UserManagement = () => {
                   <option value="ADMIN">System Administrator</option>
                   <option value="USER">User</option>
                 </Form.Select>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Check
-                  type="checkbox"
-                  label="Active"
-                  name="is_active"
-                  checked={editUser.is_active}
-                  onChange={handleCheckboxChange}
-                />
               </Form.Group>
               
               <div className="d-grid gap-2 mt-4">
