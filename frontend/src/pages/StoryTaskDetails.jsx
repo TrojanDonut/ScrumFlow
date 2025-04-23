@@ -34,9 +34,10 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
     const updatedTasks = [...localTasks];
     setLocalTasks(updatedTasks);
 
-    // Call the parent component's refresh method if provided
+    // Only refresh the specific task's data, not the entire story
+    // This prevents the unnecessary story refresh that was causing problems
     if (onTaskAdded) {
-      onTaskAdded(story.id, { refresh: true });
+      onTaskAdded(story.id, { refreshTask: taskId, skipStoryRefresh: true });
     }
   };
 

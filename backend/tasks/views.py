@@ -415,11 +415,7 @@ class TaskStopView(views.APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
             
-        # Update task status back to assigned
-        task.status = Task.Status.ASSIGNED
-        task.save()
-        
-        # Create a time log entry
+        # Create a time log entry without changing task status
         if 'hours_spent' in request.data:
             TimeLog.objects.create(
                 task=task,
@@ -516,14 +512,88 @@ class StartTaskSessionView(views.APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, task_id):
-        task = Task.objects.get(id=task_id)
-        task.start_session(request.user)
-        return Response({"message": "Task session started."})
+        try:
+            task = get_object_or_404(Task, id=task_id)
+            
+            # Check if user is the assignee
+            if task.assigned_to != request.user:
+                return Response(
+                    {"error": "Only the assigned user can start a session for this task."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+            # Check if task is not in progress yet
+            if task.status != Task.Status.IN_PROGRESS:
+                # Update task status to IN_PROGRESS
+                task.status = Task.Status.IN_PROGRESS
+                task.save()
+                
+            # Start a new session or get existing active session
+            session = task.start_session(request.user)
+            
+            # Check if a session was created or already active
+            if session:
+                return Response({
+                    "success": True,
+                    "message": "Task session started.",
+                    "session_id": session.id,
+                    "start_time": session.start_time
+                })
+            else:
+                return Response({
+                    "error": "Failed to start session. Please try again."
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+        except Exception as e:
+            logger.error(f"Error starting task session: {str(e)}")
+            return Response({
+                "error": f"An error occurred: {str(e)}"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class StopTaskSessionView(views.APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, task_id):
-        task = Task.objects.get(id=task_id)
-        task.stop_session(request.user)
-        return Response({"message": "Task session stopped and time logged."})
+        try:
+            task = get_object_or_404(Task, id=task_id)
+            
+            # Check if user is the assignee
+            if task.assigned_to != request.user:
+                return Response(
+                    {"error": "Only the assigned user can stop a session for this task."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+            # Only proceed if task is in progress
+            if task.status != Task.Status.IN_PROGRESS:
+                return Response(
+                    {"error": "Task is not currently in progress."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            # Try to stop the active session
+            session_stopped = task.stop_session(request.user)
+            
+            if session_stopped:
+                # Get the time log that was just created
+                latest_log = TimeLog.objects.filter(
+                    task=task,
+                    user=request.user
+                ).order_by('-created_at').first()
+                
+                return Response({
+                    "success": True,
+                    "message": "Task session stopped and time logged.",
+                    "hours_logged": latest_log.hours_spent if latest_log else 0
+                })
+            else:
+                return Response({
+                    "error": "No active session found to stop.",
+                    "success": False
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error stopping task session: {str(e)}")
+            return Response({
+                "error": f"An error occurred: {str(e)}"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

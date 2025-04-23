@@ -153,6 +153,14 @@ const UserStories = () => {
   };
 
   const handleAddTask = (storyId, taskData) => {
+    // Check if this is a refresh request from time logging
+    if (taskData && taskData.refreshTask && taskData.skipStoryRefresh) {
+      // Just refresh the specific task data, without triggering story refreshes
+      console.log(`Refreshing task ${taskData.refreshTask} data only`);
+      return;
+    }
+    
+    // Regular task creation flow
     // Generate a temporary ID for optimistic update
     const tempId = `temp-${Date.now()}`;
     const optimisticTask = {

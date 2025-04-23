@@ -61,7 +61,19 @@ class Task(models.Model):
 
     def start_session(self, user):
         """Start a new session for the task"""
-        TaskSession.objects.create(task=self, user=user, start_time=timezone.now())
+        # Check if there's already an active session
+        existing_session = TaskSession.objects.filter(
+            task=self, 
+            user=user, 
+            end_time__isnull=True
+        ).first()
+        
+        if existing_session:
+            # Session already exists, return it without creating a new one
+            return existing_session
+        
+        # Create a new session
+        return TaskSession.objects.create(task=self, user=user, start_time=timezone.now())
 
     def stop_session(self, user):
         """Stop the current session and log the time"""
@@ -71,7 +83,10 @@ class Task(models.Model):
             session.save()
             # Log the time spent
             hours = session.duration()
-            TimeLog.log_time(task=self, user=user, hours=hours, description="Auto-logged from session")
+            if hours > 0:
+                TimeLog.log_time(task=self, user=user, hours=hours, description="Auto-logged from session")
+            return True
+        return False
 
 
 class TimeLog(models.Model):
