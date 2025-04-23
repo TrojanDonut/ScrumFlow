@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Badge } from 'react-bootstrap';
+import { Modal, Button } from 'react-bootstrap';
 import { generateTaskStatusTag } from './TaskUtils';
 import AddTaskModal from './AddTaskModal';
 import TimeTracking from './TimeTracking';
-import axios from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
-import { acceptTask, assignTask, unassignTask } from '../store/slices/taskSlice';
-
+import { acceptTask, completeTask, stopWorkingOnTask, unassignTask } from '../store/slices/taskSlice';
+import EditTaskModal from './EditTaskModal';
 const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, currentProjectRole, onTaskAdded, handleRejectStory, handleAcceptStory }) => {
+  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [localTasks, setLocalTasks] = useState([]);
   const dispatch = useDispatch();
@@ -26,48 +27,103 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
     return user ? user.user.username : 'nobody';
   };
 
-  // Handler for accepting a task
-  const handleAcceptTask = async (taskId) => {
-    try {
-      const result = await dispatch(acceptTask(taskId)).unwrap();
-      
-      // Update the task in localTasks
-      setLocalTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId ? { ...task, status: 'IN_PROGRESS' } : task
-        )
-      );
-    } catch (err) {
-      console.error('Failed to accept task:', err);
-    }
-  };
-
-  // Handler for rejecting a task
-  const handleRejectTask = async (taskId) => {
-    try {
-      const result = await dispatch(unassignTask(taskId)).unwrap();
-      
-      // Update the task in localTasks
-      setLocalTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId ? { ...task, status: 'UNASSIGNED', assigned_to: null } : task
-        )
-      );
-    } catch (err) {
-      console.error('Failed to reject task:', err);
-    }
-  };
 
   // Handler for when time is logged
   const handleTimeLogged = (taskId) => {
     // Refresh the task data after time logging
     const updatedTasks = [...localTasks];
     setLocalTasks(updatedTasks);
-    
+
     // Call the parent component's refresh method if provided
     if (onTaskAdded) {
       onTaskAdded(story.id, { refresh: true });
     }
+  };
+
+  const handleAcceptTask = (taskId) => {
+    dispatch(acceptTask(taskId))
+      .unwrap()
+      .then((updatedTask) => {
+        console.log('Task accepted:', updatedTask);
+        setLocalTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to accept task:', error);
+      });
+  };
+
+  const handleRejectTask = (taskId) => {
+    dispatch(unassignTask(taskId))
+      .unwrap()
+      .then((updatedTask) => {
+        console.log('Task rejected:', updatedTask);
+        setLocalTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to reject task:', error);
+      });
+  };
+
+  const handleStopWorkingOnTask = (taskId) => {
+    dispatch(stopWorkingOnTask(taskId))
+      .unwrap()
+      .then((stoppedTask) => {
+        console.log('Task stopped:', stoppedTask);
+        setLocalTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === stoppedTask.id ? stoppedTask : task))
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to stop working on task:', error);
+      });
+  };
+
+  const handleCompleteTask = (taskId) => {
+    dispatch(completeTask(taskId))
+      .unwrap()
+      .then((completedTask) => {
+        console.log('Task completed:', completedTask);
+        setLocalTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === completedTask.id ? completedTask : task))
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to complete task:', error);
+      });
+  };
+
+  const handleEditTask = (task) => {
+    setSelectedTask(task);
+    setShowEditTaskModal(true);
+  };
+
+  const handleTaskUpdated = (updatedTask) => {
+    setLocalTasks((prevTasks) =>
+      prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+    );
+  };
+
+  const handleTaskDeleted = (taskId) => {
+    setLocalTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+  };
+
+  const renderEditTaskModal = () => {
+    if (!selectedTask) return null;
+
+    return (
+      <EditTaskModal
+        show={showEditTaskModal}
+        handleClose={() => setShowEditTaskModal(false)}
+        task={selectedTask}
+        users={users}
+        onTaskUpdated={handleTaskUpdated}
+        onTaskDeleted={handleTaskDeleted}
+      />
+    );
   };
 
   return (
@@ -105,30 +161,51 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                     {task.assigned_to === currentUser.id && (
                       <>
                         {task.status === "ASSIGNED" && (
-                          <Button
-                            variant="success"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleAcceptTask(task.id)}
-                          >
-                            Accept task
-                          </Button>
+                          <>
+                            <Button
+                              variant="success"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleAcceptTask(task.id)}
+                            >
+                              Accept task
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleRejectTask(task.id)}
+                            >
+                              Reject task
+                            </Button>
+                          </>
                         )}
-                        {(task.status === "IN_PROGRESS" || task.status === "ASSIGNED") && (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleRejectTask(task.id)}
-                          >
-                            Reject task
-                          </Button>
+                        {(task.status === "IN_PROGRESS") && (
+                          <>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleCompleteTask(task.id)}
+                            >
+                              Task completed
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => handleStopWorkingOnTask(task.id)}
+                            >
+                              Stop work
+                            </Button>
+                          </>
                         )}
                       </>
                     )}
                     <Button
                       variant="warning"
                       size="sm"
+                      onClick={() => handleEditTask(task)}
                     >
                       Edit task
                     </Button>
@@ -151,8 +228,8 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       <Modal.Footer>
         {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
           <>
-            <Button 
-              variant="success" 
+            <Button
+              variant="success"
               onClick={() => {
                 handleAcceptStory(story.id);
                 handleClose();
@@ -160,8 +237,8 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
             >
               Accept Story
             </Button>
-            <Button 
-              variant="danger" 
+            <Button
+              variant="danger"
               onClick={() => {
                 handleRejectStory(story.id);
                 handleClose();
@@ -181,6 +258,9 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         </Button>
       </Modal.Footer>
     </Modal>
+
+    {/* Edit Task Modal */}
+    {renderEditTaskModal()}
 
     {/* Add Task Modal */}
     <AddTaskModal
