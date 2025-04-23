@@ -60,7 +60,12 @@ class Command(BaseCommand):
                     (ProjectMember.Role.DEVELOPER, 'developer3'),
                     (ProjectMember.Role.DEVELOPER, 'developer4'),
                     (ProjectMember.Role.DEVELOPER, 'developer5'),
-                    (ProjectMember.Role.DEVELOPER, 'developer6')
+                    (ProjectMember.Role.DEVELOPER, 'developer6'),
+                    (ProjectMember.Role.SCRUM_MASTER, 'tevž_sedmak'),
+                    (ProjectMember.Role.PRODUCT_OWNER, 'marko_pozenel'),
+                    (ProjectMember.Role.DEVELOPER, 'matija_tomažič'),
+                    (ProjectMember.Role.DEVELOPER, 'matjaž_kumin'),
+                    (ProjectMember.Role.DEVELOPER, 'gal_šubic'),
                 ]
                 for role, username in roles:
                     if not User.objects.filter(username__iexact=username).exists():
@@ -103,6 +108,11 @@ class Command(BaseCommand):
                     developer4_user = User.objects.get(username='developer4')
                     developer5_user = User.objects.get(username='developer5')
                     developer6_user = User.objects.get(username='developer6')
+                    pozenel_user = User.objects.get(username='marko_pozenel')
+                    tevz_scrum_master_user = User.objects.get(username='tevž_sedmak')
+                    matija_user = User.objects.get(username='matija_tomažič')
+                    matjaz_user = User.objects.get(username='matjaž_kumin')
+                    gal_user = User.objects.get(username='gal_šubic')
                     p1_devs = [
                         developer_user, developer2_user, developer3_user,
                         developer4_user, developer5_user, developer6_user
@@ -110,6 +120,7 @@ class Command(BaseCommand):
                     p2_devs = [
                         developer2_user, developer3_user, developer4_user
                     ]
+                    p3_devs = [matija_user, matjaz_user, gal_user]
                 except User.DoesNotExist as e:
                     self.stdout.write(self.style.ERROR(
                         f'Required user not found: {e}')
@@ -125,7 +136,14 @@ class Command(BaseCommand):
                     name='Scrum Project 2',
                     defaults={ 'description': 'Desc 2', 'product_owner': product_owner_user, 'scrum_master': scrum_master_user }
                 )
-
+                project3, _ = Project.objects.get_or_create(
+                    name='SCRUM aplikacija',
+                    defaults={
+                        'description': 'Spletna aplikacija za podporo razvoju po metodi SCRUM', 
+                        'product_owner': pozenel_user, 
+                        'scrum_master': tevz_scrum_master_user, 
+                    }
+                )
                 # Create project memberships
                 # Project 1 memberships
                 ProjectMember.objects.get_or_create(
@@ -171,6 +189,29 @@ class Command(BaseCommand):
                     )
                     self.stdout.write(self.style.SUCCESS(
                         f'Added {dev.username} to {project2.name} as Developer'
+                    ))
+
+                # Project 3 memberships
+                ProjectMember.objects.get_or_create(
+                    project=project3,
+                    user=pozenel_user,
+                    defaults={'role': ProjectMember.Role.PRODUCT_OWNER}
+                )
+                ProjectMember.objects.get_or_create(
+                    project=project3,
+                    user=tevz_scrum_master_user,
+                    defaults={'role': ProjectMember.Role.SCRUM_MASTER}
+                )
+
+                # Add developers to Project 3
+                for dev in p3_devs:
+                    ProjectMember.objects.get_or_create(
+                        project=project3,
+                        user=dev,
+                        defaults={'role': ProjectMember.Role.DEVELOPER}
+                    )
+                    self.stdout.write(self.style.SUCCESS(
+                        f'Added {dev.username} to {project3.name} as Developer'
                     ))
 
                 # --- Create Sprints ---
@@ -226,6 +267,17 @@ class Command(BaseCommand):
                 project2_sprint = create_or_get_sprint(
                     project2, current_start_p2, current_end_p2, 12
                 )
+                # P3 Sprints
+                current_start_p3 = current_start_p1
+                current_end_p3 = current_end_p1
+                current_sprint_p3 = create_or_get_sprint(
+                    project3, current_start_p3, current_end_p3, 20
+                )
+                future_start_p3 = get_weekday_date(today + datetime.timedelta(21))
+                future_end_p3 = get_weekday_date(future_start_p3 + datetime.timedelta(7))
+                future_sprint_p3 = create_or_get_sprint(
+                    project3, future_start_p3, future_end_p3, 10
+                )
 
                 # --- User Story and Task Creation ---
                 p1_dev1, p1_dev2, p1_dev3 = p1_devs[0], p1_devs[1], p1_devs[2]
@@ -280,7 +332,43 @@ class Command(BaseCommand):
                              'points': 3, 'status': 'IN_PROGRESS', 'assignee': p2_dev2,
                              'bv': 150, 'tests': 'Verify Z\nRegress test'},
                         ]
-                    }
+                    },
+                    project3: {
+                        None: [ # Backlog
+                            {'name': 'Burndown diagram', 
+                             'text': 'Diagram ki prikazuje prispevke članov.',
+                             'points': 5, 'status': 'NOT_STARTED', 'assignee': None,
+                             'bv': 5, 'tests': 'Preglej če je smiselno'},
+                            {'name': 'Planning poker', 
+                             'text': 'Člani razvojne skupine lahko ocenijo časovne zahtevnosti zgodb po metodi Planning poker.',
+                             'points': 7, 'status': 'NOT_STARTED', 'assignee': None,
+                             'bv': 3, 'tests': 'Testiraj\nTestiraj še malo več'},
+                        ],
+                        current_sprint_p3: [
+                            {'name': 'Ustvarjanje novih nalog', 
+                             'text': 'Člani razvojne skupine lahko dodajajo nove naloge k aktivnemu sprintu',
+                             'points': 3, 'status': 'IN_PROGRESS', 'assignee': gal_user,
+                             'bv': 8, 'tests': 'Testiraj dodajanje nove naloge'},
+                            {'name': 'Ustvarjanje novih projektov', 'text': 'Ustvari nov projekt',
+                             'points': 5, 'status': 'DONE', 'assignee': matija_user,
+                             'bv': 10, 'tests': 'Preveri ustvarjanje novega sprinta\nPreveri še kaj'},
+                            {'name': 'Popravljanje sprintov', 'text': 'sprinti',
+                             'points': 4, 'status': 'DONE',
+                             'assignee': matjaz_user, 'bv': 2,
+                             'tests': 'Popravi datum zaključka sprinta\nDodaj developerja v sprint'},
+                        ],
+                        future_sprint_p3: [
+                            {'name': 'Beleženje porabe časa', 
+                             'text': 'Uporabniki lahko beležijo porabo časa na nalogah',
+                             'points': 10, 'status': 'NOT_STARTED', 'assignee': None,
+                             'bv': 5, 'tests': 'Testiraj regularen potek'},
+                            {'name': 'Sprejemanje nalog', 
+                             'text': 'Član razvojne skupine si nalogo lahko označi kot sprejeto',
+                             'points': 2, 'status': 'NOT_STARTED', 'assignee': None,
+                             'bv': 1, 
+                             'tests': 'Testiraj sprejetje naloge\nTestiraj sprejemanje naloge, ki jo je prevzel že drug član'},
+                        ]
+                    },
                 }
 
                 # --- Create Stories Loop ---
@@ -396,6 +484,22 @@ class Command(BaseCommand):
                          'status': 'UNASSIGNED', 'assignee': p2_dev2},
                         {'title': 'P2 Regress Z', 'desc': 'Test', 'hours': 1.0,
                          'status': 'UNASSIGNED', 'assignee': p2_dev3},
+                    ],
+                    'Ustvarjanje novih nalog': [
+                        {'title': 'Backend', 'desc': 'Naredi backend za naloge', 'hours': 10.0,
+                         'status': 'COMPLETED', 'assignee': gal_user},
+                        {'title': 'Frontend', 'desc': '???', 'hours': 8.0,
+                         'status': 'IN_PROGRESS', 'assignee': gal_user},
+                         {'title': 'Testiranje', 'desc': 'Test', 'hours': 5.0,
+                         'status': 'UNASSIGNED', 'assignee': None},
+                    ],
+                    'Ustvarjanje novih projektov': [
+                        {'title': 'Backend', 'desc': 'Frontend', 'hours': 7.0,
+                         'status': 'COMPLETED', 'assignee': matija_user},
+                        {'title': 'Frontend', 'desc': 'Frontend 2', 'hours': 4.0,
+                         'status': 'COMPLETED', 'assignee': matija_user},
+                         {'title': 'Testiranje', 'desc': 'Test', 'hours': 13.0,
+                         'status': 'COMPLETED', 'assignee': matija_user},
                     ]
                 }
 
