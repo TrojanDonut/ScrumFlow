@@ -188,7 +188,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                               className="me-2"
                               onClick={() => handleCompleteTask(task.id)}
                             >
-                              Task completed
+                              Complete task
                             </Button>
                             <Button
                               variant="danger"
@@ -196,7 +196,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                               className="me-2"
                               onClick={() => handleStopWorkingOnTask(task.id)}
                             >
-                              Stop work
+                              Unassign
                             </Button>
                           </>
                         )}
