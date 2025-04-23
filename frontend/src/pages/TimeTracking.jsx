@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 
 const TimeTracking = ({ task, onTimeLogged }) => {
-  const [isTracking, setIsTracking] = useState(false);
   const [timeLogs, setTimeLogs] = useState([]);
   const [manualHours, setManualHours] = useState('');
   const [description, setDescription] = useState('');
@@ -19,7 +18,6 @@ const TimeTracking = ({ task, onTimeLogged }) => {
   useEffect(() => {
     if (task && task.id && !task.id.toString().includes('temp-')) {
       setTaskStatus(task.status);
-      setIsTracking(task.status === 'IN_PROGRESS');
       fetchTimeLogs();
       checkForActiveSession();
     }
@@ -75,7 +73,6 @@ const TimeTracking = ({ task, onTimeLogged }) => {
     try {
       const response = await axios.get(`${API_URL}/tasks/${task.id}/`);
       setTaskStatus(response.data.status);
-      setIsTracking(response.data.status === 'IN_PROGRESS');
       setError('');
     } catch (error) {
       console.error('Error fetching task status:', error);
@@ -88,7 +85,6 @@ const TimeTracking = ({ task, onTimeLogged }) => {
       // First ensure task is in progress
       if (taskStatus !== 'IN_PROGRESS') {
         await axios.post(`${API_URL}/tasks/${task.id}/start/`);
-        setIsTracking(true);
         setTaskStatus('IN_PROGRESS');
       }
       
@@ -169,7 +165,6 @@ const TimeTracking = ({ task, onTimeLogged }) => {
       if (taskStatus !== 'IN_PROGRESS') {
         await axios.post(`${API_URL}/tasks/${task.id}/start/`);
         setTaskStatus('IN_PROGRESS');
-        setIsTracking(true);
       }
       
       // Log time by stopping (but task remains in progress)
