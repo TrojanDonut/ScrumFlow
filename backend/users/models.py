@@ -23,6 +23,7 @@ class User(AbstractUser):
     two_factor_secret = models.CharField(max_length=255, null=True, blank=True)
     failed_login_attempts = models.IntegerField(default=0)
     last_failed_login = models.DateTimeField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = _('user')
@@ -51,3 +52,8 @@ class User(AbstractUser):
         self.failed_login_attempts += 1
         self.last_failed_login = timezone.now()
         self.save(update_fields=['failed_login_attempts', 'last_failed_login'])
+
+    def delete(self):
+        """Soft delete the user"""
+        self.is_deleted = True
+        self.save()
