@@ -13,6 +13,9 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
   const [selectedTask, setSelectedTask] = useState(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [localTasks, setLocalTasks] = useState([]);
+  const [showCompleteTaskModal, setShowCompleteTaskModal] = useState(false);
+  const [taskToComplete, setTaskToComplete] = useState(null);
+  const [finalEstimatedHours, setFinalEstimatedHours] = useState('');
   const dispatch = useDispatch();
   const currentUser = useSelector((state) => state.auth.user);
   
@@ -93,8 +96,8 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       });
   };
 
-  const handleCompleteTask = (taskId) => {
-    dispatch(completeTask(taskId))
+  const handleCompleteTask = (taskId, finalEstimatedHours) => {
+    dispatch(completeTask({ taskId, finalEstimatedHours }))
       .unwrap()
       .then((completedTask) => {
         console.log('Task completed:', completedTask);
@@ -134,6 +137,43 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         onTaskUpdated={handleTaskUpdated}
         onTaskDeleted={handleTaskDeleted}
       />
+    );
+  };
+
+  const renderCompleteTaskModal = () => {
+    if (!taskToComplete) return null;
+  
+    return (
+      <Modal show={showCompleteTaskModal} onHide={() => setShowCompleteTaskModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Complete Task</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Enter the final estimated hours for the task:</p>
+          <input
+            type="number"
+            className="form-control"
+            value={Math.round(finalEstimatedHours * 10) / 10}
+            onChange={(e) => setFinalEstimatedHours(e.target.value)}
+            min="0"
+            step="0.5"
+          />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCompleteTaskModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              handleCompleteTask(taskToComplete.id, finalEstimatedHours);
+              setShowCompleteTaskModal(false);
+            }}
+          >
+            Complete Task
+          </Button>
+        </Modal.Footer>
+      </Modal>
     );
   };
 
@@ -201,7 +241,11 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                               variant="primary"
                               size="sm"
                               className="me-2"
-                              onClick={() => handleCompleteTask(task.id)}
+                              onClick={() => {
+                                setTaskToComplete(task);
+                                setFinalEstimatedHours(task.estimated_hours);
+                                setShowCompleteTaskModal(true);
+                              }}
                             >
                               Complete task
                             </Button>
@@ -279,7 +323,8 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       </Modal.Footer>
     </Modal>
 
-    {/* Edit Task Modal */}
+    {renderCompleteTaskModal()}
+
     {renderEditTaskModal()}
 
     {/* Add Task Modal */}

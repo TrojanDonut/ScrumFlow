@@ -9,6 +9,7 @@ from stories.models import UserStory
 from tasks.serializers import TaskSerializer, TimeLogSerializer
 import logging
 from projects.models import ProjectMember
+from decimal import Decimal
 
 # Create your logger
 logger = logging.getLogger(__name__)
@@ -471,9 +472,23 @@ class TaskCompleteView(views.APIView):
                     {"error": "Only the assigned user or Scrum Master can complete tasks."},
                     status=status.HTTP_403_FORBIDDEN
                 )
-                
-        # Update task status
+        
+        final_estimated_hours = float(request.data.get('final_estimated_hours'))
+        if final_estimated_hours is not None:
+            try:
+                final_estimated_hours = Decimal(final_estimated_hours)
+                task.estimated_hours = final_estimated_hours
+            except (ValueError, TypeError, Decimal.InvalidOperation):
+                return Response(
+                    {"error": "Invalid value for final_estimated_hours."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
         task.status = Task.Status.COMPLETED
+        task.save()
+        
+        task = get_object_or_404(Task, id=task_id)
+        task.remaining_hours = 0
         task.save()
         
         # Create a time log entry if hours spent was provided
