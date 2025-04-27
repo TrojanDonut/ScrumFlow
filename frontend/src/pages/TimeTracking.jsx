@@ -297,8 +297,8 @@ const TimeTracking = ({ task, onTimeLogged }) => {
                       placeholder="Hours"
                       value={manualHours}
                       onChange={(e) => setManualHours(e.target.value)}
-                      min="0.1"
-                      step="0.1"
+                      min="0.5"
+                      step="0.5"
                       required
                       style={{ maxWidth: '100px' }}
                     />

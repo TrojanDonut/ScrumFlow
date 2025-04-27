@@ -112,9 +112,10 @@ export const addTaskToStory = createAsyncThunk(
           withCredentials: true,
         }
       );
-
+      console.log("response:", response);
       return { task: response.data, storyId };
     } catch (error) {
+      console.error("Error adding task:", error);
       return rejectWithValue(error.response?.data || 'Failed to add task');
     }
   }

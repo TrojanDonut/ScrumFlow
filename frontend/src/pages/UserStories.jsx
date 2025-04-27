@@ -170,7 +170,7 @@ const UserStories = () => {
     };
 
     // Dispatch optimistic update
-    dispatch(addTaskToStoryLocally({ task: optimisticTask, storyId }));
+    // dispatch(addTaskToStoryLocally({ task: optimisticTask, storyId }));
 
     // Make the API call
     dispatch(addTaskToStory({ storyId, taskData }))

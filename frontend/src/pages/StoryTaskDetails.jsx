@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button } from 'react-bootstrap';
-import { generateTaskStatusTag } from './TaskUtils';
+import { generateTaskStatusTag, displayTime } from './TaskUtils';
 import AddTaskModal from './AddTaskModal';
 import TimeTracking from './TimeTracking';
 import { useSelector, useDispatch } from 'react-redux';
 import { acceptTask, completeTask, stopWorkingOnTask, unassignTask } from '../store/slices/taskSlice';
 import EditTaskModal from './EditTaskModal';
+import axios from 'axios';
+
 const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus, currentProjectRole, onTaskAdded, handleRejectStory, handleAcceptStory }) => {
   const [showEditTaskModal, setShowEditTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -29,15 +31,23 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
 
 
   // Handler for when time is logged
-  const handleTimeLogged = (taskId) => {
-    // Refresh the task data after time logging
-    const updatedTasks = [...localTasks];
-    setLocalTasks(updatedTasks);
-
-    // Only refresh the specific task's data, not the entire story
-    // This prevents the unnecessary story refresh that was causing problems
-    if (onTaskAdded) {
-      onTaskAdded(story.id, { refreshTask: taskId, skipStoryRefresh: true });
+  const handleTimeLogged = async (taskId) => {
+    try {
+      // Fetch the updated task data from the backend
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/tasks/${taskId}/`);
+      const updatedTask = response.data;
+  
+      // Update the localTasks state with the updated task
+      setLocalTasks((prevTasks) =>
+        prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+      );
+  
+      // Notify the parent component if needed
+      if (onTaskAdded) {
+        onTaskAdded(story.id, { refreshTask: taskId, skipStoryRefresh: true });
+      }
+    } catch (error) {
+      console.error('Failed to fetch updated task:', error);
     }
   };
 
@@ -144,6 +154,10 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
         <p>{story.acceptance_tests}</p>
         <hr />
         <h4>Tasks:</h4>
+        <div>Total estimated time: </div>
+        <div>Total time logged: </div>
+        <div>Total time remaining: </div>
+        <br />
         {localTasks.length > 0 ? (
           <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
             {localTasks.map((task) => (
@@ -214,7 +228,11 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
                   </div>
                 </div>
                 <div>assigned to: {getUsername(task.assigned_to)}</div>
-                <div>estimated time: {Math.round(task.estimated_hours)}h</div>
+                <div>time estimated: {Math.round(task.estimated_hours)}h</div>
+                <div>
+                  time completed/remaining: {displayTime(task.estimated_hours - task.remaining_hours)}h/
+                  {displayTime(task.remaining_hours)}h
+                </div>
                 <div>{task.description}</div>
                 <TimeTracking 
                   task={task} 
@@ -272,7 +290,7 @@ const StoryTaskDetails = ({ show, handleClose, story, tasks, users, sprintStatus
       users={users}
       onTaskAdded={(storyId, taskData) => {
         onTaskAdded(storyId, taskData);
-        handleClose();
+        // handleClose();
       }}
     />
     </>

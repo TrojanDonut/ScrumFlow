@@ -1,6 +1,7 @@
 from rest_framework import generics, status, views
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from tasks.models import Task, TimeLog
@@ -259,8 +260,12 @@ class StoryTasksView(generics.ListCreateAPIView):
     
     def perform_create(self, serializer):
         story_id = self.kwargs['story_id']
-        story = get_object_or_404(UserStory, id=story_id)
+        title = self.request.data.get('title')
         
+        if Task.objects.filter(title=title, story_id=story_id).exists():
+            raise ValidationError({"error": "A task with this name already exists for this story"})
+        
+        # story = get_object_or_404(UserStory, id=story_id)
         serializer.save(story_id=story_id, created_by=self.request.user)
 
 
@@ -429,7 +434,8 @@ class TaskStopView(views.APIView):
                 date=timezone.now().date(),
                 description=request.data.get('description', '')
             )
-            
+        
+        task = get_object_or_404(Task, id=task_id)    
         serializer = TaskSerializer(task)
         return Response(serializer.data)
 

@@ -40,3 +40,14 @@ export const generateTaskStatusTag = (status) => {
       </Button>
     );
   };
+
+export const displayTime = (remainingTime) => {
+    if (remainingTime <= 0) {
+        return 0;
+    }
+    // Round to the nearest 0.5
+    const roundedTime = Math.round(remainingTime * 2) / 2;
+
+    // Return as an integer if it's a whole number, otherwise return the rounded value
+    return Number.isInteger(roundedTime) ? Math.round(roundedTime) : roundedTime;
+};
