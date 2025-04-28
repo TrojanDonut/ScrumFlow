@@ -15,7 +15,9 @@ import {
   Tab,
   Nav,
   Modal,
-  Form
+  Form,
+  OverlayTrigger,
+  Tooltip
 } from 'react-bootstrap';
 import { fetchBacklogStories, fetchStories, resetBacklogStories, updateStory, returnStoriesToBacklog, updateStoryStatus } from '../store/slices/storySlice';
 import { fetchProjectById } from '../store/slices/projectSlice';
@@ -23,6 +25,7 @@ import { fetchCompletedSprints } from '../store/slices/sprintSlice';
 import AddUserStory from './AddUserStory';
 import { deleteStory } from '../store/slices/storySlice';
 import axios from 'axios';
+import RejectionReasonModal from '../components/RejectionReasonModal';
 
 const ProductBacklog = () => {
   const { id } = useParams();
@@ -30,7 +33,7 @@ const ProductBacklog = () => {
   const { backlogStories, loading, error } = useSelector(state => state.stories);
   const { currentProject } = useSelector(state => state.projects);
   const { currentProjectRole, auth } = useSelector(state => state.auth);
-  const { completedSprints } = useSelector(state => state.sprints);
+  const { completedSprints, currentSprint } = useSelector(state => state.sprints);
   const [showModal, setShowModal] = useState(false);
   const [selectedStory, setSelectedStory] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -44,6 +47,8 @@ const ProductBacklog = () => {
   const [errorMessage, setError] = useState(null);
   const [fetchError, setFetchError] = useState(null);
   const [returnError, setReturnError] = useState(null);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [storyToReject, setStoryToReject] = useState(null);
 
   // Handler to open the status update modal
   const handleOpenStatusModal = (story) => {
@@ -73,16 +78,37 @@ const ProductBacklog = () => {
     try {
       await dispatch(updateStoryStatus({ storyId, status: 'ACCEPTED' })).unwrap();
       dispatch(fetchBacklogStories(id));
+      
+      // Use the actual currentSprint.id
+      if (currentSprint?.id) {
+        dispatch(fetchStories({ projectId: id, sprintId: currentSprint.id }));
+      }
     } catch (err) {
       console.error("Error accepting story:", err);
       setError('Failed to accept story: ' + (err.message || 'Unknown error'));
     }
   };
 
-  const handleRejectStory = async (storyId) => {
+  const handleOpenRejectModal = (story) => {
+    setStoryToReject(story);
+    setShowRejectionModal(true);
+  };
+
+  const handleRejectStory = async (storyId, rejectionReason) => {
     try {
-      await dispatch(updateStoryStatus({ storyId, status: 'REJECTED' })).unwrap();
+      console.log('Rejecting story with reason:', rejectionReason);
+      const result = await dispatch(updateStoryStatus({ 
+        storyId, 
+        status: 'REJECTED',
+        rejectionReason
+      })).unwrap();
+      
+      console.log('Rejected story response:', result);
       dispatch(fetchBacklogStories(id));
+      
+      if (currentSprint?.id) {
+        dispatch(fetchStories({ projectId: id, sprintId: currentSprint.id }));
+      }
     } catch (err) {
       console.error("Error rejecting story:", err);
       setError('Failed to reject story: ' + (err.message || 'Unknown error'));
@@ -286,18 +312,40 @@ const ProductBacklog = () => {
                 >
                   <div>
                     <h6>{story.name}</h6>
-                    <small>Business Value: {story.business_value}</small>
-                    {story.story_points ? (
-                      <small className="ms-3">Story Points: {story.story_points}</small>
+                    <div className="small">
+                      <span>Business Value: {story.business_value}</span>
+                      {story.story_points ? (
+                        <span className="ms-3">Story Points: {story.story_points}</span>
+                      ) : (
+                        <span className="ms-3 text-warning">Not Estimated</span>
+                      )}
+                      {/* Dodaj prikaz sprint ID za dokončane zgodbe */}
+                      {console.log("Story data:", story)}
+                      {story.status === 'ACCEPTED' && story.sprint && (
+                        <span className="ms-3 text-success">
+                          Completed in Sprint: {story.sprint}
+                        </span>
+                      )}
+                    </div>
+                    {story.status === 'REJECTED' && story.rejection_reason ? (
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={<Tooltip id={`tooltip-${story.id}`}>{story.rejection_reason}</Tooltip>}
+                      >
+                      <div className="mt-1 text-danger">
+                        <strong>Rejection reason:</strong> {story.rejection_reason}
+                      </div>
+                        <Badge bg="danger" className="ms-3">REJECTED</Badge>
+                      </OverlayTrigger>
+                      
                     ) : (
-                      <small className="ms-3 text-warning">Not Estimated</small>
+                      <Badge bg={story.status === 'ACCEPTED' ? 'success' : 'secondary'} className="ms-3">
+                        {story.status.replace('_', ' ')}
+                      </Badge>
                     )}
-                    {story.sprint && (
+                    {story.sprint && story.status !== 'ACCEPTED' && story.status !== 'REJECTED' && (
                       <Badge bg="info" className="ms-3">In Sprint</Badge>
                     )}
-                    <Badge bg={story.status === 'ACCEPTED' ? 'success' : 'secondary'} className="ms-3">
-                      {story.status.replace('_', ' ')}
-                    </Badge>
                   </div>
                   <div>
                     {story.status === 'DONE' && currentProjectRole === 'PRODUCT_OWNER' && (
@@ -314,7 +362,7 @@ const ProductBacklog = () => {
                           variant="danger" 
                           size="sm" 
                           className="me-2"
-                          onClick={() => handleRejectStory(story.id)}
+                          onClick={() => handleOpenRejectModal(story)}
                         >
                           Reject Story
                         </Button>
@@ -505,18 +553,20 @@ const ProductBacklog = () => {
                           >
                             <div>
                               <h6>{story.name}</h6>
-                              <small>Business Value: {story.business_value}</small>
-                              {story.story_points ? (
-                                <small className="ms-3">Story Points: {story.story_points}</small>
-                              ) : (
-                                <small className="ms-3 text-warning">Not Estimated</small>
-                              )}
-                              {story.sprint && (
-                                <Badge bg="info" className="ms-3">In Sprint</Badge>
-                              )}
-                              <Badge bg={story.status === 'ACCEPTED' ? 'success' : 'secondary'} className="ms-3">
-                                {story.status.replace('_', ' ')}
-                              </Badge>
+                              <div className="small">
+                                <span>Business Value: {story.business_value}</span>
+                                {story.story_points ? (
+                                  <span className="ms-3">Story Points: {story.story_points}</span>
+                                ) : (
+                                  <span className="ms-3 text-warning">Not Estimated</span>
+                                )}
+                                {story.sprint && (
+                                  <Badge bg="info" className="ms-3">In Sprint</Badge>
+                                )}
+                                <Badge bg={story.status === 'ACCEPTED' ? 'success' : 'secondary'} className="ms-3">
+                                  {story.status.replace('_', ' ')}
+                                </Badge>
+                              </div>
                             </div>
                             <div>
                             {!story.sprint && currentProjectRole === "SCRUM_MASTER" && (
@@ -680,47 +730,59 @@ const ProductBacklog = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-    </Container>
 
-  <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)}>
-    <Modal.Header closeButton>
-      <Modal.Title>Update Story Status</Modal.Title>
-    </Modal.Header>
-    <Modal.Body>
-    {console.log('Rendering status modal with story:', storyToUpdateStatus)}
-      {storyToUpdateStatus && (
-        <>
-          <p><strong>Story:</strong> {storyToUpdateStatus.name}</p>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Status</Form.Label>
-              <Form.Select 
-                value={newStatus} 
-                onChange={e => setNewStatus(e.target.value)}
-              >
-                <option value="">Select a status</option>
-                <option value="NOT_STARTED">Not started</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="DONE">Done</option>
-              </Form.Select>
-            </Form.Group>
-          </Form>
-        </>
-      )}
-    </Modal.Body>
-    <Modal.Footer>
-      <Button variant="secondary" onClick={() => setShowStatusModal(false)}>
-        Cancel
-      </Button>
-      <Button 
-        variant="primary" 
-        onClick={handleStatusUpdateSubmit}
-        disabled={!newStatus}
-      >
-        Save Changes
-      </Button>
-    </Modal.Footer>
-  </Modal>
+      <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Update Story Status</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+        {console.log('Rendering status modal with story:', storyToUpdateStatus)}
+          {storyToUpdateStatus && (
+            <>
+              <p><strong>Story:</strong> {storyToUpdateStatus.name}</p>
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Status</Form.Label>
+                  <Form.Select 
+                    value={newStatus} 
+                    onChange={e => setNewStatus(e.target.value)}
+                  >
+                    <option value="">Select a status</option>
+                    <option value="NOT_STARTED">Not started</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="DONE">Done</option>
+                  </Form.Select>
+                </Form.Group>
+              </Form>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowStatusModal(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={handleStatusUpdateSubmit}
+            disabled={!newStatus}
+          >
+            Save Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <RejectionReasonModal
+        show={showRejectionModal}
+        handleClose={() => setShowRejectionModal(false)}
+        onReject={(reason) => {
+          if (storyToReject) {
+            handleRejectStory(storyToReject.id, reason);
+            setShowRejectionModal(false);
+          }
+        }}
+        storyName={storyToReject?.name}
+      />
+    </Container>
   </>
   );
 };

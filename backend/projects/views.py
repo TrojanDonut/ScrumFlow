@@ -322,15 +322,24 @@ class UpdateStoryStatusView(APIView):
             
             # Validation: Can only ACCEPT/REJECT stories that are DONE
             if new_status in ['ACCEPTED', 'REJECTED'] and story.status != 'DONE':
-                return Response({"error": f"Can only {new_status.lower()} stories that are in DONE state."}, 
-                               status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": f"Can only {new_status.lower()} stories that are in DONE state."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             
             # Set new status
             story.status = new_status
             
-            # Če je zgodba sprejeta ali zavrnjena, jo odstrani iz sprinta
-            if new_status in ['ACCEPTED', 'REJECTED']:
+            # Če je zgodba sprejeta, shrani sprint_id v katerem je bila zaključena
+            if new_status == 'ACCEPTED':
+                story.finished_in_sprint = story.sprint
                 story.sprint = None
+            elif new_status == 'REJECTED':
+                # Če je zgodba zavrnjena, ne shrani sprint_id
+                story.sprint = None
+            else:
+                # Za ostale statuse ne spreminjaj finished_in_sprint
+                pass
                 
             story.save()
             

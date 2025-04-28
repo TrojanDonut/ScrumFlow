@@ -550,6 +550,8 @@ class UpdateStoryStatusView(APIView):
             story = UserStory.objects.get(id=story_id)
             new_status = request.data.get('status')
             
+            rejection_reason = request.data.get('rejection_reason')
+            
             # Validation: Can only ACCEPT/REJECT stories that are DONE
             if new_status in ['ACCEPTED', 'REJECTED'] and story.status != 'DONE':
                 return Response(
@@ -563,6 +565,9 @@ class UpdateStoryStatusView(APIView):
             # Če je zgodba sprejeta ali zavrnjena, jo odstrani iz sprinta
             if new_status in ['ACCEPTED', 'REJECTED']:
                 story.sprint = None
+                
+            if new_status == 'REJECTED' and rejection_reason:
+                story.rejection_reason = rejection_reason
                 
             story.save()
             

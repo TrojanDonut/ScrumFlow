@@ -4,12 +4,17 @@ from .models import UserStory
 
 class UserStorySerializer(serializers.ModelSerializer):
     created_by = serializers.ReadOnlyField(source='created_by.username')
+    finished_sprint_id = serializers.SerializerMethodField()
+    
+    def get_finished_sprint_id(self, obj):
+        return obj.finished_in_sprint.id if obj.finished_in_sprint else None
 
     class Meta:
         model = UserStory
         fields = ['id', 'name', 'text', 'priority', 'status', 'story_points',
                   'sprint', 'project', 'acceptance_tests', 'business_value',
-                  'created_by', 'created_at', 'updated_at', 'assigned_to']
+                  'created_by', 'created_at', 'updated_at', 'assigned_to',
+                  'finished_in_sprint', 'finished_sprint_id', 'rejection_reason']
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
         extra_kwargs = {
             'sprint': {'required': False, 'allow_null': True},

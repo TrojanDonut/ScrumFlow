@@ -265,7 +265,7 @@ export const returnStoriesToBacklog = createAsyncThunk(
 
 export const updateStoryStatus = createAsyncThunk(
   'stories/updateStoryStatus',
-  async ({ storyId, status }, { rejectWithValue, getState }) => {
+  async ({ storyId, status, rejectionReason }, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
       const token = auth.token;
@@ -277,7 +277,10 @@ export const updateStoryStatus = createAsyncThunk(
       console.log(`Sending request to update story ${storyId} status to ${status}`);
       const response = await axios.post(
         `${API_URL}/user-stories/${storyId}/update-status/`,
-        { status },
+        { 
+          status,
+          rejection_reason: rejectionReason // Include rejection reason in the payload
+        },
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -286,8 +289,7 @@ export const updateStoryStatus = createAsyncThunk(
           withCredentials: true,
         }
       );
-      console.log(`Story ${storyId} status updated to ${status}. Response:`, response.data);
-      console.log(`Sprint field in response: ${response.data.sprint}`);
+      
       return response.data;
     } catch (error) {
       console.error('Error updating story status:', error.response?.data || error.message);
