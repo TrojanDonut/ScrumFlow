@@ -263,7 +263,7 @@ class StoryTasksView(generics.ListCreateAPIView):
         story_id = self.kwargs['story_id']
         title = self.request.data.get('title')
         
-        if Task.objects.filter(title=title, story_id=story_id).exists():
+        if Task.objects.filter(story_id=story_id, title__iexact=title).exists():
             raise ValidationError({"error": "A task with this name already exists for this story"})
         
         # story = get_object_or_404(UserStory, id=story_id)
