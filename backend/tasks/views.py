@@ -1,6 +1,7 @@
 from rest_framework import generics, status, views
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from tasks.models import Task, TimeLog
@@ -8,6 +9,7 @@ from stories.models import UserStory
 from tasks.serializers import TaskSerializer, TimeLogSerializer
 import logging
 from projects.models import ProjectMember
+from decimal import Decimal
 
 # Create your logger
 logger = logging.getLogger(__name__)
@@ -259,8 +261,12 @@ class StoryTasksView(generics.ListCreateAPIView):
     
     def perform_create(self, serializer):
         story_id = self.kwargs['story_id']
-        story = get_object_or_404(UserStory, id=story_id)
+        title = self.request.data.get('title')
         
+        if Task.objects.filter(story_id=story_id, title__iexact=title).exists():
+            raise ValidationError({"error": "A task with this name already exists for this story"})
+        
+        # story = get_object_or_404(UserStory, id=story_id)
         serializer.save(story_id=story_id, created_by=self.request.user)
 
 
@@ -429,7 +435,8 @@ class TaskStopView(views.APIView):
                 date=timezone.now().date(),
                 description=request.data.get('description', '')
             )
-            
+        
+        task = get_object_or_404(Task, id=task_id)    
         serializer = TaskSerializer(task)
         return Response(serializer.data)
 
@@ -465,9 +472,23 @@ class TaskCompleteView(views.APIView):
                     {"error": "Only the assigned user or Scrum Master can complete tasks."},
                     status=status.HTTP_403_FORBIDDEN
                 )
-                
-        # Update task status
+        
+        final_estimated_hours = float(request.data.get('final_estimated_hours'))
+        if final_estimated_hours is not None:
+            try:
+                final_estimated_hours = Decimal(final_estimated_hours)
+                task.estimated_hours = final_estimated_hours
+            except (ValueError, TypeError, Decimal.InvalidOperation):
+                return Response(
+                    {"error": "Invalid value for final_estimated_hours."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
         task.status = Task.Status.COMPLETED
+        task.save()
+        
+        task = get_object_or_404(Task, id=task_id)
+        task.remaining_hours = 0
         task.save()
         
         # Create a time log entry if hours spent was provided

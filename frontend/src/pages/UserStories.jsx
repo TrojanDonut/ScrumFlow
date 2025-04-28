@@ -170,7 +170,7 @@ const UserStories = () => {
     };
 
     // Dispatch optimistic update
-    dispatch(addTaskToStoryLocally({ task: optimisticTask, storyId }));
+    // dispatch(addTaskToStoryLocally({ task: optimisticTask, storyId }));
 
     // Make the API call
     dispatch(addTaskToStory({ storyId, taskData }))
@@ -182,7 +182,7 @@ const UserStories = () => {
       })
       .catch((error) => {
         console.error('Failed to add task:', error);
-        setError('Failed to add task: ' + (error.message || 'Unknown error'));
+        setError('Failed to add task: ' + (error.message || error.error || 'Unknown error'));
         // Remove the optimistic task on error
         dispatch(removeTaskLocally({ taskId: tempId, storyId }));
       });

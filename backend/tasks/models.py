@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import F
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from stories.models import UserStory
@@ -27,15 +28,16 @@ class Task(models.Model):
         max_digits=5,
         decimal_places=2,
         validators=[MinValueValidator(0.00)],
-        null=True,
-        blank=True
+        null=False,
+        blank=False,
+        default=0.00,
     )
     remaining_hours = models.DecimalField(
         max_digits=5,
         decimal_places=2,
-        validators=[MinValueValidator(0)],
-        null=True,
-        blank=True
+        null=False,
+        blank=False,
+        default=0.00,
     )
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -54,14 +56,22 @@ class Task(models.Model):
 
     class Meta:
         ordering = ['created_at']
+        unique_together = ('title', 'story')
 
     def __str__(self):
         return f"{self.description[:50]}... ({self.get_status_display()})"
 
     def save(self, *args, **kwargs):
         # Set remaining hours to estimated hours on creation
-        if not self.pk and self.remaining_hours is None:
+        if not self.pk:
             self.remaining_hours = self.estimated_hours
+        
+        if self.pk:
+            original = Task.objects.get(pk=self.pk)
+            if self.estimated_hours != original.estimated_hours:
+                difference = self.estimated_hours - original.estimated_hours
+                self.remaining_hours += difference
+        
         super().save(*args, **kwargs)
 
     def start_session(self, user):
@@ -121,10 +131,29 @@ class TimeLog(models.Model):
     def __str__(self):
         return f"{self.user.username} logged {self.hours_spent} hours on {self.date}"
     
+    def save(self, *args, **kwargs):
+        # Handle new TimeLog entries
+        if not self.pk:
+            task = self.task
+            if task.remaining_hours is not None:
+                task.remaining_hours = F('remaining_hours') - self.hours_spent
+                task.save(update_fields=['remaining_hours'])
+        
+        # Handle updates to existing TimeLog entries
+        else:
+            original = TimeLog.objects.get(pk=self.pk)
+            task = self.task
+            if task.remaining_hours is not None:
+                # Add back the original hours and subtract the new hours
+                task.remaining_hours = F('remaining_hours') + original.hours_spent - self.hours_spent
+                task.save(update_fields=['remaining_hours'])
+
+        super().save(*args, **kwargs)
+    
     @classmethod
     def log_time(cls, task, user, hours, description=""):
-        """Create a TimeLog entry"""
-        cls.objects.create(
+        """Create a TimeLog entry and update the task's remaining hours."""
+        time_log = cls.objects.create(
             task=task,
             user=user,
             hours_spent=hours,
@@ -132,6 +161,11 @@ class TimeLog(models.Model):
             description=description
         )
 
+        if task.remaining_hours is not None:
+            task.remaining_hours = F('remaining_hours') - hours
+            task.save(update_fields=['remaining_hours'])
+
+        return time_log
 
 
 class TaskSession(models.Model):

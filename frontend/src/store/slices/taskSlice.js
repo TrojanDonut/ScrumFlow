@@ -112,9 +112,10 @@ export const addTaskToStory = createAsyncThunk(
           withCredentials: true,
         }
       );
-
+      console.log("response:", response);
       return { task: response.data, storyId };
     } catch (error) {
+      console.error("Error adding task:", error);
       return rejectWithValue(error.response?.data || 'Failed to add task');
     }
   }
@@ -234,7 +235,7 @@ export const stopWorkingOnTask = createAsyncThunk(
 
 export const completeTask = createAsyncThunk(
   'tasks/completeTask',
-  async (taskId, { rejectWithValue, getState }) => {
+  async ({ taskId, finalEstimatedHours }, { rejectWithValue, getState }) => {
     try {
       const { auth } = getState();
       const token = auth.token;
@@ -245,6 +246,7 @@ export const completeTask = createAsyncThunk(
 
       const response = await axios.post(
         `${API_URL}/tasks/${taskId}/complete/`,
+        { final_estimated_hours: finalEstimatedHours },
         {
           headers: {
             Authorization: `Bearer ${token}`,
